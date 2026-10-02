@@ -9,21 +9,22 @@ export const mcpUsage = `thesis-toolkit mcp research-hub
 
   Start the research-hub MCP server over stdio. Downloads the pinned research-hub binary
   (checksum-verified) and paper-search-mcp source into the cache on first use.
-  RSH_* environment variables pass through (e.g. RSH_LIBRARY_API_URL, RSH_DOWNLOAD_DIRECTORY).
+  RSH_* environment variables pass through (e.g. RSH_LIBRARY_API_URL, RSH_DOWNLOAD_DIRECTORY;
+  RSH_LIBRARY_ADMIN_TOKEN enables save_papers_to_library).
   Requires uv for paper-search-mcp.`;
 
 export const RESEARCH_HUB = {
   repo: "wayne930242/research_hub_mcp",
-  version: "0.6.7",
+  version: "0.6.8",
   /** SHA-256 of each release asset, keyed by `${process.platform}-${process.arch}`. */
   binaries: {
     "darwin-arm64": {
       target: "aarch64-apple-darwin",
-      sha256: "73798bc58d8215c44dcd7ab9beb29f9b3fe586da6579fc65509ce01123e80bb9",
+      sha256: "75584686d1dfeb799ceaa185b4cb82c3c962bb95660f12f495663dbf1348f0c8",
     },
     "linux-x64": {
       target: "x86_64-unknown-linux-musl",
-      sha256: "1687915a656338edb1565b224d274d9f28897a469875f31e5ada19206eaadc17",
+      sha256: "f58f1b7ff68b1ea447d66e75dfc9e10213b6db1f8b802c10c710fb81c930997f",
     },
   } as Record<string, { target: string; sha256: string }>,
 };

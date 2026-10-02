@@ -69,12 +69,15 @@ cache, then runs research-hub over stdio. `RSH_*` variables pass through:
   "mcpServers": {
     "research-hub": {
       "command": "npx",
-      "args": ["-y", "thesis-toolkit@0.1.2", "mcp", "research-hub"],
+      "args": ["-y", "thesis-toolkit@0.1.3", "mcp", "research-hub"],
       "env": { "RSH_LIBRARY_API_URL": "https://…", "RSH_DOWNLOAD_DIRECTORY": "/abs/path/downloads" }
     }
   }
 }
 ```
+
+`save_papers_to_library` also needs `RSH_LIBRARY_ADMIN_TOKEN`, the library's admin credential. Supply it
+from the launching environment rather than the committed `env` block.
 
 ## Repository-only tools
 
