@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# Build, check, and run the Lean 4 proofs in lean/.
+#
+# Usage:
+#   scripts/lean build            Fetch the Mathlib cache if needed, then lake build.
+#   scripts/lean check <file>     Build its imports, then elaborate one .lean file (relative to cwd or lean/).
+#   scripts/lean run <exe>        Run a lean_exe from lakefile.toml (shortcuts: metaphysical, modal).
+#   scripts/lean list             List the lean_exe targets.
+#   scripts/lean stats            Count theorems, definitions, examples, and sorry per file.
+
+set -euo pipefail
+
+LEAN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lean" && pwd -P)"
+CALLER_DIR="$PWD"
+
+usage() {
+    sed -n '2,10p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+}
+
+die() {
+    echo "error: $*" >&2
+    exit 1
+}
+
+require_lake() {
+    command -v lake >/dev/null \
+        || die "lake not found; install elan: https://github.com/leanprover/elan"
+}
+
+list_exes() {
+    awk '/^\[\[lean_exe\]\]/ { in_exe = 1; next }
+         /^\[/ { in_exe = 0 }
+         in_exe && /^name *=/ { gsub(/"/, "", $3); print $3 }' "$LEAN_DIR/lakefile.toml"
+}
+
+cmd_build() {
+    require_lake
+    # Mathlib is huge; the prebuilt cache avoids compiling it from source.
+    if [[ ! -d "$LEAN_DIR/.lake/packages/mathlib/.lake/build" ]]; then
+        lake exe cache get
+    fi
+    lake build
+}
+
+cmd_check() {
+    [[ $# -eq 1 ]] || die "usage: scripts/lean check <file.lean>"
+    require_lake
+    local file="$1"
+    if [[ "$file" != /* ]]; then
+        if [[ -f "$CALLER_DIR/$file" ]]; then
+            file="$CALLER_DIR/$file"
+        else
+            file="$LEAN_DIR/$file"
+        fi
+    fi
+    [[ -f "$file" ]] || die "file not found: $1"
+    lake lean "$file"
+}
+
+cmd_run() {
+    [[ $# -eq 1 ]] || die "usage: scripts/lean run <exe>"
+    require_lake
+    local exe="$1"
+    case "$exe" in
+        metaphysical) exe=runMetaphysicalPlayground ;;
+        modal) exe=runModalLogicDemo ;;
+    esac
+    list_exes | grep -qx "$exe" || die "unknown executable '$exe'. Available:
+$(list_exes | sed 's/^/  - /')"
+    lake exe "$exe"
+}
+
+cmd_stats() {
+    local total_sorry=0 file theorems defs examples sorries
+    printf '%-60s %8s %6s %8s %6s\n' file theorems defs examples sorry
+    while IFS= read -r -d '' file; do
+        theorems="$(grep -cE '^(theorem|lemma) ' "$file" || true)"
+        defs="$(grep -cE '^(def|inductive|structure) ' "$file" || true)"
+        examples="$(grep -cE '^example' "$file" || true)"
+        sorries="$(grep -cw 'sorry' "$file" || true)"
+        total_sorry=$((total_sorry + sorries))
+        printf '%-60s %8d %6d %8d %6d\n' "${file#"$LEAN_DIR"/}" "$theorems" "$defs" "$examples" "$sorries"
+    done < <(find "$LEAN_DIR" -name '*.lean' -not -path '*/.lake/*' -print0 | sort -z)
+    echo "lines containing sorry: $total_sorry"
+}
+
+main() {
+    [[ $# -ge 1 ]] || { usage >&2; exit 1; }
+    local cmd="$1"
+    shift
+    cd "$LEAN_DIR"
+    case "$cmd" in
+        build) cmd_build "$@" ;;
+        check) cmd_check "$@" ;;
+        run) cmd_run "$@" ;;
+        list) list_exes ;;
+        stats) cmd_stats "$@" ;;
+        -h|--help|help) usage ;;
+        *) usage >&2; die "unknown command: $cmd" ;;
+    esac
+}
+
+main "$@"

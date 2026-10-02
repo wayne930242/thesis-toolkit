@@ -1,0 +1,34 @@
+{
+  "name": "thesis-toolkit",
+  "version": "0.1.0",
+  "description": "Typst dissertation templates, fonts, a project compiler, and a research MCP launcher",
+  "license": "MIT",
+  "author": "Wei-Hung",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wayne930242/thesis-toolkit.git"
+  },
+  "type": "module",
+  "bin": {
+    "thesis-toolkit": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "fonts",
+    "templates",
+    "!templates/**/*.pdf"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test 'test/**/*.test.ts'",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "typescript": "^7.0.2"
+  }
+}

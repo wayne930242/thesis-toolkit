@@ -1,0 +1,8 @@
+[package]
+name = "ntu-thesis"
+version = "0.1.0"
+entrypoint = "lib.typ"
+authors = ["Wei-Hung"]
+license = "MIT"
+description = "National Taiwan University dissertation template with per-chapter bibliographies"
+exclude = ["example.typ", "example.bib", "*.pdf"]

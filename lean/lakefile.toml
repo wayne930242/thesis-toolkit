@@ -1,0 +1,29 @@
+name = "metaphysicalPlaygroundProject"
+defaultTargets = ["metaphysicalPlayground", "modalLogicDemo"]
+
+[leanOptions]
+pp.unicode.fun = true
+
+[[require]]
+name = "Foundation"
+git = "https://github.com/iehality/lean4-logic"
+rev = "master"
+
+[[lean_lib]]
+name = "metaphysicalPlayground"
+srcDir = "metaphysicalPlayground"
+
+[[lean_lib]]
+name = "modalLogicDemo"
+
+[[lean_lib]]
+name = "lewisModalRealism"
+srcDir = "lewisModalRealism"
+
+[[lean_exe]]
+name = "runMetaphysicalPlayground"
+root = "runMetaphysicalPlayground"
+
+[[lean_exe]]
+name = "runModalLogicDemo"
+root = "runModalLogicDemo" 
