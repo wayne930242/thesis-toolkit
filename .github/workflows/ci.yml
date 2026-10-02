@@ -18,6 +18,8 @@ jobs:
         with:
           typst-version: "0.15"
       - run: npm ci
+      # Same npm as the publish job, so its pack check runs here first.
+      - run: npm install --global npm@latest
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
