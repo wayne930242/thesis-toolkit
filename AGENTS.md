@@ -35,3 +35,6 @@ own repository and call the CLI through `npx`. Read [README.md](README.md) for t
 CI (`.github/workflows/ci.yml`) runs typecheck, tests, the template compile, and the pack check.
 Pushing a `v*` tag whose version matches `package.json` publishes through npm trusted publishing
 (`.github/workflows/publish.yml`). Check that the CI run of the tagged commit is green as well.
+CI installs npm exactly as `publish.yml` does (`npm@latest`): v0.1.1 broke when npm 12 changed
+`npm pack --json` and only the publish job ran it. Keep the `chmod +x dist/cli.js` in `build`: tsc
+writes 0644 files, and npm sets the executable bit only when it creates the `.bin` link.
