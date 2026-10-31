@@ -8,6 +8,7 @@ export const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const fontDir = join(packageRoot, "fonts");
 export const articleTemplateDir = join(packageRoot, "templates", "article");
 export const thesisTemplateDir = join(packageRoot, "templates", "ntu-thesis");
+export const essayTemplateDir = join(packageRoot, "templates", "anonymous-essay");
 
 /** Per-user cache for downloaded binaries, sources, and the generated Typst package tree. */
 export function cacheDir(env: NodeJS.ProcessEnv = process.env): string {

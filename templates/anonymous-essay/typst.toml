@@ -1,0 +1,8 @@
+[package]
+name = "anonymous-essay"
+version = "0.1.0"
+entrypoint = "lib.typ"
+authors = ["Wei-Hung"]
+license = "MIT"
+description = "Anonymised essay for blind review: no author, affiliation, date or keywords on the page or in the PDF metadata"
+exclude = ["example.typ", "*.pdf"]

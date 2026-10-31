@@ -3,7 +3,7 @@ import { readFileSync, readlinkSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { packageRoot } from "../src/paths.ts";
-import { linkPackage, thesisPackage } from "../src/typst.ts";
+import { essayPackage, linkPackage, thesisPackage, toolkitPackages } from "../src/typst.ts";
 import { rootRelative } from "../src/commands/compile.ts";
 import { fixture } from "./helpers.ts";
 
@@ -11,6 +11,16 @@ test("thesisPackage reads name and version from typst.toml", () => {
   const pkg = thesisPackage();
   assert.equal(pkg.name, "ntu-thesis");
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
+});
+
+test("essayPackage reads the anonymous-essay manifest, and toolkitPackages lists both packages", () => {
+  const pkg = essayPackage();
+  assert.equal(pkg.name, "anonymous-essay");
+  assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
+  assert.deepEqual(
+    toolkitPackages().map((p) => p.name),
+    ["ntu-thesis", "anonymous-essay"],
+  );
 });
 
 test("linkPackage creates, keeps, and repoints its own symlink but never replaces a directory", () => {

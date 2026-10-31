@@ -2,7 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { lstatSync, mkdirSync, readFileSync, readlinkSync, renameSync, rmSync, symlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DependencyError, ToolkitError } from "./errors.ts";
-import { cacheDir, fontDir, thesisTemplateDir } from "./paths.ts";
+import { cacheDir, essayTemplateDir, fontDir, thesisTemplateDir } from "./paths.ts";
 
 /** `path()` values, which the thesis template's bibliography helper relies on, need Typst 0.15. */
 const MIN_TYPST: readonly [number, number] = [0, 15];
@@ -14,16 +14,30 @@ export interface TypstPackage {
   dir: string;
 }
 
-export function thesisPackage(): TypstPackage {
-  const manifest = readFileSync(join(thesisTemplateDir, "typst.toml"), "utf8");
+/** Read a template's name and version from its `typst.toml`. */
+export function readPackage(dir: string): TypstPackage {
+  const manifest = readFileSync(join(dir, "typst.toml"), "utf8");
   const field = (key: string): string => {
     const match = manifest.match(new RegExp(`^${key}\\s*=\\s*"([^"]+)"`, "m"));
     if (!match) {
-      throw new ToolkitError(`templates/ntu-thesis/typst.toml lacks ${key}`);
+      throw new ToolkitError(`${join(dir, "typst.toml")} lacks ${key}`);
     }
     return match[1] as string;
   };
-  return { namespace: "local", name: field("name"), version: field("version"), dir: thesisTemplateDir };
+  return { namespace: "local", name: field("name"), version: field("version"), dir };
+}
+
+export function thesisPackage(): TypstPackage {
+  return readPackage(thesisTemplateDir);
+}
+
+export function essayPackage(): TypstPackage {
+  return readPackage(essayTemplateDir);
+}
+
+/** Every Typst package the toolkit ships, in the order `link` reports them. */
+export function toolkitPackages(): TypstPackage[] {
+  return [thesisPackage(), essayPackage()];
 }
 
 /** Point `<root>/<namespace>/<name>/<version>` at the package directory, replacing a stale link. */
@@ -50,7 +64,9 @@ export function linkPackage(root: string, pkg: TypstPackage): string {
 /** A `--package-path` directory that resolves this toolkit's `@local` packages. */
 export function packagePath(): string {
   const root = join(cacheDir(), "typst-packages");
-  linkPackage(root, thesisPackage());
+  for (const pkg of toolkitPackages()) {
+    linkPackage(root, pkg);
+  }
   return root;
 }
 

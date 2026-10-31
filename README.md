@@ -57,6 +57,18 @@ Create the bibliography path in your project, not in the package, so it resolves
 #let chapter-bib = ntu-chapter-bib.with(path(sys.inputs.at("bib-path", default: "/references.bib")))
 ```
 
+## The anonymous-essay template
+
+`templates/anonymous-essay` is the Typst package `@local/anonymous-essay:0.1.0`, for blind review
+(competitions, journal submissions). The page shows only the title, an optional word count, the
+abstract and the body, and the PDF metadata carries the title alone: no author, keywords or date.
+See `templates/anonymous-essay/example.typ`.
+
+```typst
+#import "@local/anonymous-essay:0.1.0": essay, references
+#show: essay.with(title: [My Title], abstract: [...])
+```
+
 ## research-hub MCP server
 
 `mcp research-hub` downloads the pinned
