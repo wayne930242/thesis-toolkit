@@ -6,9 +6,10 @@ import { compileUsage } from "../src/commands/compile.ts";
 import { linkUsage } from "../src/commands/link.ts";
 import { mcpUsage } from "../src/commands/mcp.ts";
 import { newProjectUsage } from "../src/commands/new-project.ts";
-import { ToolkitError } from "../src/errors.ts";
+import { ProjectError, ToolkitError, userMessage } from "../src/errors.ts";
 import { typstUserPackageDir } from "../src/paths.ts";
 import { run, usage } from "../src/run.ts";
+import { runCli, sandboxEnv } from "./cli-helpers.ts";
 import { fixture } from "./helpers.ts";
 
 async function capture(argv: string[], cwd = process.cwd()): Promise<{ code: number; text: string }> {
@@ -69,5 +70,25 @@ test("top-level help, version, no arguments, and unknown commands", async () => 
   for (const name of ["nope", "toString", "constructor"]) {
     await assert.rejects(capture([name]), ToolkitError);
     await assert.rejects(capture(["help", name]), ToolkitError);
+  }
+});
+
+test("an unwritable cache directory is reported as one error line, not a stack trace", () => {
+  const dir = fixture({ "a.typ": "hello" });
+  const result = runCli(["compile", "a.typ"], dir, sandboxEnv({ XDG_CACHE_HOME: "/dev/null/x" }));
+  assert.equal(result.code, 1);
+  // Which call hits the bad path first (lstat, mkdir) depends on the Node version.
+  assert.match(result.stderr, /^error: ENOTDIR: not a directory, \w+ '\/dev\/null\/x\/thesis-toolkit/);
+  assert.doesNotMatch(result.stderr, /^\s+at /m, "a stack trace was printed");
+});
+
+test("only failures the user can act on become an error line; a bug keeps its stack", () => {
+  assert.equal(userMessage(new ProjectError("file not found: x")), "file not found: x");
+  const denied = Object.assign(new Error("EACCES: permission denied, open '/x'"), { code: "EACCES", errno: -13, syscall: "open" });
+  assert.equal(userMessage(denied), "EACCES: permission denied, open '/x'");
+  // Node's own argument errors carry a code but no errno: they are bugs in this program.
+  const invalid = Object.assign(new TypeError("The \"path\" argument must be of type string"), { code: "ERR_INVALID_ARG_TYPE" });
+  for (const bug of [new TypeError("x is not a function"), invalid, "thrown string", undefined]) {
+    assert.equal(userMessage(bug), undefined);
   }
 });
