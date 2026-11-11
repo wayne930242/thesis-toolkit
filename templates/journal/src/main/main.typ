@@ -4,15 +4,16 @@
 //
 // Markdown 寫法：
 // - 標題 # / ## / ### 依序排成「壹、」「一、」「（一）」
-// - 引註 [@key]，帶頁碼 [23][@key]；文末參考文獻自動產生
+// - 引註 [@key]，帶頁碼 [@key, 23]，多筆 [@a; @b]，只印年 [-@key]，敘述式 @key 指出（key 後空一格）
+//   文末參考文獻自動產生
 // - 腳註 [^1]，並在文中另起一行寫 [^1]: 腳註內容
 // - 圖片路徑相對於專案根目錄，例如 ![說明](figures/圖一.png)
-#import "@local/zh-journal:0.1.2": article, zh-join-lines
+#import "@local/zh-journal:0.1.2": article, md-cites, zh-join-lines
 #import "@preview/cmarker:0.1.10": render
 
 // 以專案根目錄為基準讀 Markdown 與其中的圖片。
 #let md(file) = render(
-  zh-join-lines(read("../../" + file)),
+  md-cites(zh-join-lines(read("../../" + file))),
   scope: (
     image: (source, alt: none, format: auto) => image(
       if source.starts-with("/") { source } else { "../../" + source },

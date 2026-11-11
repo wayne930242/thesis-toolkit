@@ -65,6 +65,84 @@
   parts.join(default: "")
 }
 
+// A Pandoc citation key: starts with a letter, digit, or `_`; inner `:./-` allowed; trailing
+// punctuation ends it, so `@sosa2007.` cites `sosa2007`.
+#let _key = "[\p{L}\p{N}_](?:[\p{L}\p{N}_:./-]*[\p{L}\p{N}_])?"
+#let _cite-pattern = regex(
+  // 1-2: cmarker's own `[locator][@key]`, left as it is.
+  "\[([^\[\]]*)\]\[@(" + _key + ")\]"
+  // 3: a bracketed group `[@a; -@b, 23]`, not a link `[...](` .
+  + "|\[(\s*-?@" + _key + "[^\[\]]*)\](?:[^(]|$)"
+  // 4-6: a narrative `@key`, optionally `@key [23]`; not inside an email or URL.
+  + "|(^|[^A-Za-z0-9._\\\\@/:=?&%+\\[-])@(" + _key + ")(?:\s*\[([^\[\]@^]+)\])?",
+)
+#let _cite-item = regex("^\s*(-?)@(" + _key + ")\s*(?:,\s*(.*?))?\s*$")
+
+#let _cite-call(key, locator: none, form: none) = {
+  if locator != none and locator.contains("-->") {
+    panic("zh-journal: a citation locator must not contain `-->`: " + locator)
+  }
+  "#cite(label(" + repr(key) + ")"
+  if locator != none { ", supplement: " + repr(locator) }
+  if form != none { ", form: " + repr(form) }
+  ")"
+}
+
+#let _cite-group(group) = {
+  let items = group.split(";").map(item => {
+    let m = item.match(_cite-item)
+    if m == none {
+      panic(
+        "zh-journal: cannot read the citation [" + group + "]; write each item as @key or "
+          + "@key, locator, separated by `;` (text before @ is not supported)",
+      )
+    }
+    (suppress: m.captures.at(0) == "-", key: m.captures.at(1), locator: m.captures.at(2))
+  })
+  if items.any(i => i.suppress) {
+    if items.len() > 1 {
+      panic("zh-journal: -@key (year only) must stand alone in its brackets: [" + group + "]")
+    }
+    let i = items.first()
+    "(" + _cite-call(i.key, locator: i.locator, form: "year") + ")"
+  } else {
+    items.map(i => _cite-call(i.key, locator: i.locator)).join()
+  }
+}
+
+#let _cites-in-text(text) = text.replace(_cite-pattern, m => {
+  let c = m.captures
+  if c.at(0) != none or c.at(1) != none { return m.text }
+  if c.at(2) != none {
+    // The pattern also took the character after `]`; give it back.
+    let after = m.text.slice(("[" + c.at(2) + "]").len())
+    return "<!--raw-typst" + _cite-group(c.at(2)) + "-->" + after
+  }
+  c.at(3) + "<!--raw-typst" + _cite-call(c.at(4), locator: c.at(5), form: "prose") + "-->"
+})
+
+/// Rewrite Pandoc citations in Markdown into Typst citations that cmarker passes through:
+/// `[@a]` and `[@a; @b]` give (A 2001; B 2002), `[@a, 23]` gives (A 2001, 23), `[-@a]` gives
+/// (2001), and a bare `@a` (or `@a [23]`) gives A (2001). cmarker's own `[23][@a]` keeps
+/// working. Code spans and fenced code are left alone, and so is `@` inside an email or URL.
+/// End a bare `@key` with a space or punctuation before CJK text: `@a 指出`, not `@a指出`.
+#let md-cites(source) = {
+  let fenced = false
+  let lines = ()
+  for line in source.split("\n") {
+    if line.match(_fence) != none {
+      fenced = not fenced
+      lines.push(line)
+      continue
+    }
+    if fenced { lines.push(line); continue }
+    // Even pieces lie outside inline code spans.
+    let pieces = line.split("`")
+    lines.push(pieces.enumerate().map(((i, piece)) => if calc.even(i) { _cites-in-text(piece) } else { piece }).join("`"))
+  }
+  lines.join("\n")
+}
+
 #let _keyword-line(label, items, sep) = if items.len() > 0 {
   par(first-line-indent: 0pt)[#text(weight: "bold")[#label]#items.join(sep)]
 }
