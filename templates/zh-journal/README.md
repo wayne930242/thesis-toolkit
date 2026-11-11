@@ -1,6 +1,6 @@
 # zh-journal
 
-Typst 套件 `@local/zh-journal:0.1.0`：臺灣 TSSCI 人文期刊常見的投稿格式，不對應特定期刊。投稿前仍要對照目標期刊的〈撰稿體例〉調整。
+Typst 套件 `@local/zh-journal:0.1.1`：臺灣 TSSCI 人文期刊常見的投稿格式，不對應特定期刊。投稿前仍要對照目標期刊的〈撰稿體例〉調整。
 
 版面依序是中文題目與副題、作者（服務單位與 email 列為星號附註）、中文摘要與關鍵詞、正文、參考文獻，最後是英文題目與摘要。正文標題依「壹、／一、／（一）／1.／(1)」五層編號，腳註從 1 起連續編號，引註採作者—年代制（預設 `chicago-author-date`）。
 
@@ -9,7 +9,7 @@ Typst 套件 `@local/zh-journal:0.1.0`：臺灣 TSSCI 人文期刊常見的投�
 `thesis-toolkit compile` 會提供本套件；在編輯器預覽前先執行一次 `thesis-toolkit link`。
 
 ```typst
-#import "@local/zh-journal:0.1.0": article
+#import "@local/zh-journal:0.1.1": article
 
 #show: article.with(
   title: [論文題目],
@@ -38,7 +38,7 @@ Typst 套件 `@local/zh-journal:0.1.0`：臺灣 TSSCI 人文期刊常見的投�
 | `title-en`、`subtitle-en` | `none` | 英文題目與副題 |
 | `authors` | `()` | 每位作者一個字典：`name` 必填，另可給 `name-en`、`affiliation`、`affiliation-en`、`email` |
 | `thanks` | `none` | 題目上的誌謝附註 |
-| `abstract`、`keywords` | `none`、`()` | 中文摘要與關鍵詞（以「、」連接） |
+| `abstract`、`keywords` | `none`、`()` | 中文摘要與關鍵詞；關鍵詞是字串陣列，以「、」連接，也寫入 PDF metadata |
 | `abstract-en`、`keywords-en` | `none`、`()` | 英文摘要與關鍵詞 |
 | `english-position` | `"end"` | `"end"` 把英文題目與摘要放在參考文獻之後另起一頁，`"front"` 放在中文摘要之後 |
 | `anonymous` | `false` | 匿名審查稿：不印作者、誌謝，PDF metadata 也不含作者 |
@@ -51,7 +51,7 @@ Typst 套件 `@local/zh-journal:0.1.0`：臺灣 TSSCI 人文期刊常見的投�
 ## 已知限制
 
 - 參考文獻只有一份清單，依 CSL 規則排序，不會自動分成「中文在前、西文在後」或依筆畫排序。
-- 中文條目沿用 CSL 的 zh-TW 語系，篇名用「」而非〈〉《》；期刊要求後者時需要換用自訂 CSL（`bib-style` 可給 CSL 檔的 `path(...)`）。
+- 整份參考文獻沿用 CSL 的 zh-TW 語系：中文篇名用「」而非〈〉《》，西文條目也會印成中文用語（「收入」「編輯」「及」「卷」、篇名用「」）。期刊要求西文條目用 In、edited by、Vol. 或要求〈〉《》時，需要換用自訂 CSL（`bib-style` 可給 CSL 檔的 `path(...)`）。
 - Typst 會把中文句子中間的換行排成一個空格，中文段落請寫成一行，不要在字與字之間斷行。
 
-`example.typ` 是完整示範：`thesis-toolkit compile templates/zh-journal/example.typ`。
+`example.typ` 是完整示範；在 thesis-toolkit repository 內以 `node dist/cli.js compile templates/zh-journal/example.typ` 編譯。

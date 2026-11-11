@@ -71,12 +71,12 @@ See `templates/anonymous-essay/example.typ`.
 
 ## The zh-journal template
 
-`templates/zh-journal` is the Typst package `@local/zh-journal:0.1.0`: a generic Taiwanese (TSSCI)
+`templates/zh-journal` is the Typst package `@local/zh-journal:0.1.1`: a generic Taiwanese (TSSCI)
 humanities journal article with Chinese and English titles and abstracts, 壹／一／（一） headings,
 footnotes, author-date citations, and an anonymous blind-review mode (see its README).
 
 ```typst
-#import "@local/zh-journal:0.1.0": article
+#import "@local/zh-journal:0.1.1": article
 #show: article.with(title: [論文題目], bib: path(sys.inputs.at("bib-path", default: "/references.bib")))
 ```
 

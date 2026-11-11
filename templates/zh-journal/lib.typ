@@ -117,6 +117,7 @@
     assert(type(a) == dictionary and "name" in a, message: "zh-journal: each author needs a name")
   }
   assert(type(keywords) == array and type(keywords-en) == array, message: "zh-journal: keywords must be arrays")
+  assert(keywords.all(k => type(k) == str), message: "zh-journal: keywords must be strings (they also go into the PDF metadata)")
 
   set document(
     title: title,
@@ -178,14 +179,14 @@
     v(0.6em)
     _author-notes(authors)
   }
+  // Title-page notes use *, †, ‡; footnotes from the abstract on start again at 1.
+  counter(footnote).update(0)
   if english-position == "front" {
     _abstract-block([摘要], abstract, [關鍵詞：], keywords, [、])
     _english-part(title-en, subtitle-en, authors, anonymous, abstract-en, keywords-en)
   } else {
     _abstract-block([摘要], abstract, [關鍵詞：], keywords, [、])
   }
-  // Title-page notes use *, †, ‡; body footnotes start again at 1.
-  counter(footnote).update(0)
   v(1.5em)
 
   body
