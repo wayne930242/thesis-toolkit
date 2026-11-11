@@ -1,6 +1,6 @@
 # zh-journal
 
-Typst 套件 `@local/zh-journal:0.1.1`：臺灣 TSSCI 人文期刊常見的投稿格式，不對應特定期刊。投稿前仍要對照目標期刊的〈撰稿體例〉調整。
+Typst 套件 `@local/zh-journal:0.1.2`：臺灣 TSSCI 人文期刊常見的投稿格式，不對應特定期刊。投稿前仍要對照目標期刊的〈撰稿體例〉調整。
 
 版面依序是中文題目與副題、作者（服務單位與 email 列為星號附註）、中文摘要與關鍵詞、正文、參考文獻，最後是英文題目與摘要。正文標題依「壹、／一、／（一）／1.／(1)」五層編號，腳註從 1 起連續編號，引註採作者—年代制（預設 `chicago-author-date`）。
 
@@ -9,7 +9,7 @@ Typst 套件 `@local/zh-journal:0.1.1`：臺灣 TSSCI 人文期刊常見的投�
 `thesis-toolkit compile` 會提供本套件；在編輯器預覽前先執行一次 `thesis-toolkit link`。
 
 ```typst
-#import "@local/zh-journal:0.1.1": article
+#import "@local/zh-journal:0.1.2": article
 
 #show: article.with(
   title: [論文題目],

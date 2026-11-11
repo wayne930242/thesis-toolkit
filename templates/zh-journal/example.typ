@@ -1,5 +1,5 @@
 // Example for @local/zh-journal. Inside a consumer project import the package instead:
-//   #import "@local/zh-journal:0.1.1": article
+//   #import "@local/zh-journal:0.1.2": article
 // and pass `bib: path(sys.inputs.at("bib-path", default: "/references.bib"))`.
 #import "lib.typ": article
 
