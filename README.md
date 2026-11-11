@@ -102,6 +102,9 @@ cache, then runs research-hub over stdio. `RSH_*` variables pass through:
 `save_papers_to_library` also needs `RSH_LIBRARY_ADMIN_TOKEN`, the library's admin credential. Supply it
 from the launching environment rather than the committed `env` block.
 
+research-hub keeps a `.metadata_cache/` directory in the directory it is started from, so add that
+name to the `.gitignore` of the repository your MCP client runs in.
+
 ## Repository-only tools
 
 `lean/` holds Lean 4 proofs on Foundation; `scripts/lean` builds, checks, and runs them, and

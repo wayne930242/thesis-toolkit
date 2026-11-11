@@ -17,6 +17,7 @@ import {
   platformKey,
 } from "../src/commands/mcp.ts";
 import { DownloadError } from "../src/errors.ts";
+import { packageRoot } from "../src/paths.ts";
 import { fixture } from "./helpers.ts";
 
 const BINARY = Buffer.from("#!/bin/sh\necho research-hub stand-in\n");
@@ -158,4 +159,12 @@ test("download turns every way a fetch can fail into a DownloadError naming the 
     assert.match(error.message, /^GET http:\/\/127\.0\.0\.1:\d+\/binary failed: .*ECONNREFUSED/);
     return true;
   });
+});
+
+test("the .metadata_cache/ research-hub writes where it is started is ignored here and documented", () => {
+  const ignored = readFileSync(join(packageRoot, ".gitignore"), "utf8").split("\n");
+  assert.ok(ignored.includes(".metadata_cache/"), ".gitignore lacks .metadata_cache/");
+  const readme = readFileSync(join(packageRoot, "README.md"), "utf8");
+  const section = readme.slice(readme.indexOf("## research-hub MCP server"), readme.indexOf("## Repository-only tools"));
+  assert.match(section, /\.metadata_cache\//, "the README's research-hub section does not mention it");
 });
