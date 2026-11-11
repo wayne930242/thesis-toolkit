@@ -50,7 +50,10 @@ lacks() { ! grep -qF -- "$2" <<<"$1"; }
 write_doc named false end
 text="$(pdftotext "$work/named.pdf" -)"
 meta="$(pdfinfo "$work/named.pdf"; pdfinfo -meta "$work/named.pdf")"
-check "control: named copy shows the author" has "$text" "檢查作者甲"
+# Every secret must be visible in the named copy, or its absence below would prove nothing.
+for secret in "${secrets[@]}"; do
+    check "control: named copy shows $secret" has "$text" "$secret"
+done
 check "control: named copy has author metadata" has "$meta" "檢查作者甲"
 check "abstract footnote is 1 after the title notes" has "$text" "1摘要腳註"
 check "body footnote continues at 2" has "$text" "2正文腳註"
