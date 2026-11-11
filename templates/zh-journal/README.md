@@ -72,13 +72,13 @@ npx thesis-toolkit compile my-paper main
 
 同一段落裡的換行，只要換行處的一側是中日韓文字或全形標點，`zh-join-lines` 就會把兩行接起來，不會在中文字之間多出空格；標題、條列、引文、表格、程式碼與硬換行（行尾兩個空格或 `\`）不受影響。
 
-引註用 Pandoc 的寫法（Zotero 的 Better BibTeX 與多數 Markdown 外掛產生的就是這種），由 `md-cites` 在交給 cmarker 前轉成 Typst 引註。限制：敘述式的 `@key` 後面要接空格或標點，`@sosa2007指出` 會把「指出」當成 key 的一部分；方括號裡不能在 `@` 前寫文字（`[參見 @sosa2007]`），請寫成 `參見 [@sosa2007]`；`[-@key]` 要單獨一組。行內程式碼、程式碼區塊、email 與網址裡的 `@` 不受影響。
+引註用 Pandoc 的寫法（Zotero 的 Better BibTeX 與多數 Markdown 外掛產生的就是這種），由 `md-cites` 在交給 cmarker 前轉成 Typst 引註。限制：敘述式的 `@key` 後面要接空格或標點，`@sosa2007指出` 會把「指出」當成 key 的一部分；方括號裡不能在 `@` 前寫文字（`[參見 @sosa2007]` 會停下並提示），請寫成 `參見 [@sosa2007]`；`[-@key]` 要單獨一組；一組方括號引註要寫在同一行。行內程式碼、程式碼區塊、HTML 註解 `<!-- -->`、連結、email 與網址裡的 `@` 不受影響。
 
 編譯時，toolkit 從 `.md` 與 `.typ` 檔找出引用的 key，只把這些條目從 `thesis-toolkit.json` 的 `bibliography` 抄進專案的 `references.generated.bib`，文末的參考文獻就由這份清單排出。
 
 編輯器寫在檔首的 YAML 前置資料（`---` 包起來的 `created`、`updated` 等）由 `strip-frontmatter` 去掉，不會印出來。
 
-在 MyGitNotes 的即時預覽裡，`[@sosa2007]` 會照原樣顯示，存檔時也一字不改。
+MyGitNotes 編輯的是 Markdown 原文，存檔時引註一字不改。
 
 
 ## 已知限制

@@ -34,10 +34,6 @@
 }
 
 #let _cjk = regex("[\p{Han}\p{Hiragana}\p{Katakana}\p{Hangul}\u{3000}-\u{303F}\u{FF00}-\u{FFEF}]")
-// A line that a following text line cannot continue, and a line that starts a new block.
-#let _closed-line = regex("^\s{0,3}(#|\||```|~~~)")
-#let _block-start = regex("^\s{0,3}([-*+>#|<]|\d+[.)]|```|~~~|$)")
-#let _fence = regex("^\s{0,3}(```|~~~)")
 
 /// Drop a YAML front matter block (`---` on the first line, up to the next `---` or `...`
 /// line), which editors such as MyGitNotes write and cmarker would print as text. Run it
@@ -47,28 +43,75 @@
   if m == none { source } else { source.slice(m.end) }
 }
 
+#let _fence-open = regex("^ {0,3}(`{3,}|~{3,})")
+#let _indented = regex("^( {4}|\t)")
+#let _list-item = regex("^ {0,3}([-*+]|\d+[.)])(\s|$)")
+// A line no following line can continue: an ATX heading.
+#let _closed-line = regex("^ {0,3}#")
+// A line that starts its own block, or ends the paragraph above it: list items, quotes,
+// headings, HTML, setext underlines and thematic breaks, fences, blank lines, and footnote
+// or link reference definitions.
+#let _block-start = regex("^ {0,3}([-*+>#<=_]|\d+[.)]|```|~~~|$|\[[^\]]+\]:)")
+// An unescaped `|`: the line may be a table row, with or without leading pipes.
+#let _pipe = regex("(^|[^\\\\])\|")
+
+/// Classify each Markdown line as "fence" (inside or delimiting fenced code), "code"
+/// (indented code), "blank", or "text".
+#let _line-kinds(lines) = {
+  let kinds = ()
+  let fence = none
+  let prev = "blank"
+  let in-list = false
+  for line in lines {
+    let kind = if fence != none {
+      if line.match(regex("^ {0,3}" + fence.at(0) + "{" + str(fence.at(1)) + ",}\s*$")) != none {
+        fence = none
+      }
+      "fence"
+    } else if line.match(_fence-open) != none {
+      let run = line.match(_fence-open).captures.at(0)
+      fence = (if run.starts-with("`") { "`" } else { "~" }, run.len())
+      "fence"
+    } else if line.trim() == "" {
+      "blank"
+    } else if line.match(_indented) != none and (prev == "code" or (prev == "blank" and not in-list)) {
+      "code"
+    } else {
+      if line.match(_indented) == none { in-list = line.match(_list-item) != none }
+      "text"
+    }
+    kinds.push(kind)
+    prev = kind
+  }
+  kinds
+}
+
 /// Join Markdown lines that continue one paragraph when either side of the break is CJK, so
 /// a wrapped Chinese sentence gets no stray space. Headings, lists, quotes, tables, code
-/// blocks, and hard breaks (two trailing spaces or `\`) keep their newlines, and so do breaks
-/// between Latin words. Pass Markdown text read in your project:
+/// blocks, footnote definitions, and hard breaks (two trailing spaces or `\`) keep their
+/// newlines, and so do breaks between Latin words. Pass Markdown text read in your project:
 /// `render(zh-join-lines(read("body.md")))`.
 #let zh-join-lines(source) = {
   let lines = source.split("\n")
+  let kinds = _line-kinds(lines)
   let parts = ()
-  let fenced = false
+  let joined = false
   for (i, line) in lines.enumerate() {
-    if line.match(_fence) != none { fenced = not fenced }
     let next = lines.at(i + 1, default: none)
+    // A continuation line's indentation is not content; drop it where the lines meet.
+    let text = if joined { line.trim(at: start) } else { line }
     let join = (
-      not fenced and next != none and line.trim() != ""
+      next != none and kinds.at(i) == "text" and kinds.at(i + 1) == "text"
         and line.match(_closed-line) == none
         and next.match(_block-start) == none
+        and line.match(_pipe) == none and next.match(_pipe) == none
         and not line.ends-with("  ") and not line.ends-with("\\")
         and (line.trim().clusters().last().match(_cjk) != none
           or next.trim().clusters().first().match(_cjk) != none)
     )
-    parts.push(if join { line.trim(at: end) } else { line })
+    parts.push(if join { text.trim(at: end) } else { text })
     if next != none { parts.push(if join { "" } else { "\n" }) }
+    joined = join
   }
   parts.join(default: "")
 }
@@ -76,13 +119,17 @@
 // A Pandoc citation key: starts with a letter, digit, or `_`; inner `:./-` allowed; trailing
 // punctuation ends it, so `@sosa2007.` cites `sosa2007`.
 #let _key = "[\p{L}\p{N}_](?:[\p{L}\p{N}_:./-]*[\p{L}\p{N}_])?"
+// Characters that make an `@` part of an email, URL, or word instead of a citation.
+#let _word-char = "A-Za-z0-9._\\\\@/:=?&%+-"
 #let _cite-pattern = regex(
   // 1-2: cmarker's own `[locator][@key]`, left as it is.
   "\[([^\[\]]*)\]\[@(" + _key + ")\]"
-  // 3: a bracketed group `[@a; -@b, 23]`, not a link `[...](` .
-  + "|\[(\s*-?@" + _key + "[^\[\]]*)\](?:[^(]|$)"
-  // 4-6: a narrative `@key`, optionally `@key [23]`; not inside an email or URL.
-  + "|(^|[^A-Za-z0-9._\\\\@/:=?&%+\\[-])@(" + _key + ")(?:\s*\[([^\[\]@^]+)\])?",
+  // 3: a bracketed group `[@a; @b, 23]` or `[-@a]`.
+  + "|\[(\s*-?@" + _key + "[^\[\]]*)\]"
+  // 4: brackets with text before the `@`, such as `[see @a]`.
+  + "|\[([^\[\]@]*[^\s\[\]@][^\[\]@]*@" + _key + "[^\[\]]*)\]"
+  // 5-7: a narrative `@key`, optionally `@key [23]`; not inside an email or URL.
+  + "|(^|[^" + _word-char + "\[\]])@(" + _key + ")(?:\s*\[([^\[\]@^]*)\])?",
 )
 #let _cite-item = regex("^\s*(-?)@(" + _key + ")\s*(?:,\s*(.*?))?\s*$")
 
@@ -93,8 +140,11 @@
   "#cite(label(" + repr(key) + ")"
   if locator != none { ", supplement: " + repr(locator) }
   if form != none { ", form: " + repr(form) }
-  ")"
+  // `;` ends the expression, so a `(` or `[` right after the citation stays text.
+  ");"
 }
+
+#let _locator(text) = if text == none or text.trim() == "" { none } else { text.trim() }
 
 #let _cite-group(group) = {
   let items = group.split(";").map(item => {
@@ -105,7 +155,7 @@
           + "@key, locator, separated by `;` (text before @ is not supported)",
       )
     }
-    (suppress: m.captures.at(0) == "-", key: m.captures.at(1), locator: m.captures.at(2))
+    (suppress: m.captures.at(0) == "-", key: m.captures.at(1), locator: _locator(m.captures.at(2)))
   })
   if items.any(i => i.suppress) {
     if items.len() > 1 {
@@ -118,37 +168,109 @@
   }
 }
 
-#let _cites-in-text(text) = text.replace(_cite-pattern, m => {
-  let c = m.captures
-  if c.at(0) != none or c.at(1) != none { return m.text }
-  if c.at(2) != none {
-    // The pattern also took the character after `]`; give it back.
-    let after = m.text.slice(("[" + c.at(2) + "]").len())
-    return "<!--raw-typst" + _cite-group(c.at(2)) + "-->" + after
+#let _raw(code) = "<!--raw-typst" + code + "-->"
+
+/// Rewrite the citations in `text`, a piece of one line outside code spans and comments.
+#let _cites-in-text(text) = {
+  let out = ""
+  let cursor = 0
+  for m in text.matches(_cite-pattern) {
+    let c = m.captures
+    // A `(` or `[` right after `]` makes the brackets a link's text.
+    let after = text.slice(m.end).clusters().at(0, default: "")
+    let link = after == "(" or after == "["
+    out += text.slice(cursor, m.start)
+    cursor = m.end
+    out += if c.at(0) != none or c.at(1) != none {
+      m.text
+    } else if c.at(2) != none {
+      // `[@a]: url` at the start of a line is a link reference definition.
+      if link or (after == ":" and text.slice(0, m.start).trim() == "") { m.text } else { _raw(_cite-group(c.at(2))) }
+    } else if c.at(3) != none {
+      let before = c.at(3).split("@").first().clusters().at(-1, default: "")
+      if link or before.match(regex("[" + _word-char + "]")) != none {
+        m.text
+      } else {
+        panic(
+          "zh-journal: write text outside the citation brackets, as `參見 [@key]`, not `[" + c.at(3) + "]`",
+        )
+      }
+    } else {
+      let key = c.at(5)
+      let head = c.at(4) + "@" + key
+      if c.at(6) != none and link {
+        // `@a [text](url)`: the brackets belong to the link, so the citation takes no locator.
+        c.at(4) + _raw(_cite-call(key, form: "prose")) + m.text.slice(head.len())
+      } else {
+        c.at(4) + _raw(_cite-call(key, locator: _locator(c.at(6)), form: "prose"))
+      }
+    }
   }
-  c.at(3) + "<!--raw-typst" + _cite-call(c.at(4), locator: c.at(5), form: "prose") + "-->"
-})
+  out + text.slice(cursor)
+}
+
+#let _inline-token = regex("<!--|-->|`+")
+// A line whose content would start with our `<!--`: CommonMark reads that as an HTML block.
+#let _html-start = regex("^([ \t]*(?:(?:[-*+]|\d+[.)])[ \t]+|>[ \t]?)*)<!--raw-typst")
+
+/// Rewrite one text line, skipping code spans and HTML comments; returns the new line and
+/// whether a comment is still open at its end.
+#let _cites-in-line(line, in-comment) = {
+  let tokens = line.matches(_inline-token)
+  let out = ""
+  let cursor = 0
+  let code = none
+  for (k, t) in tokens.enumerate() {
+    if in-comment {
+      if t.text == "-->" {
+        in-comment = false
+        out += line.slice(cursor, t.end)
+        cursor = t.end
+      }
+    } else if code != none {
+      if t.text == code {
+        code = none
+        out += line.slice(cursor, t.end)
+        cursor = t.end
+      }
+    } else if t.text == "<!--" {
+      out += _cites-in-text(line.slice(cursor, t.start))
+      cursor = t.start
+      in-comment = true
+    } else if t.text.starts-with("`") and tokens.slice(k + 1).any(u => u.text == t.text) {
+      // A backtick run opens a code span only when a run of the same length closes it.
+      out += _cites-in-text(line.slice(cursor, t.start))
+      cursor = t.start
+      code = t.text
+    }
+  }
+  let rest = line.slice(cursor)
+  out += if in-comment { rest } else { _cites-in-text(rest) }
+  (out.replace(_html-start, m => m.captures.at(0) + "\u{200B}<!--raw-typst", count: 1), in-comment)
+}
 
 /// Rewrite Pandoc citations in Markdown into Typst citations that cmarker passes through:
 /// `[@a]` and `[@a; @b]` give (A 2001; B 2002), `[@a, 23]` gives (A 2001, 23), `[-@a]` gives
 /// (2001), and a bare `@a` (or `@a [23]`) gives A (2001). cmarker's own `[23][@a]` keeps
-/// working. Code spans and fenced code are left alone, and so is `@` inside an email or URL.
-/// End a bare `@key` with a space or punctuation before CJK text: `@a 指出`, not `@a指出`.
+/// working. Code spans, fenced and indented code, HTML comments, links, and `@` inside an
+/// email or URL are left alone. End a bare `@key` with a space or punctuation before CJK text
+/// (`@a 指出`, not `@a指出`), keep a bracketed group on one line, and write text outside the
+/// brackets (`參見 [@a]`).
 #let md-cites(source) = {
-  let fenced = false
-  let lines = ()
-  for line in source.split("\n") {
-    if line.match(_fence) != none {
-      fenced = not fenced
-      lines.push(line)
-      continue
+  let lines = source.split("\n")
+  let kinds = _line-kinds(lines)
+  let in-comment = false
+  let out = ()
+  for (i, line) in lines.enumerate() {
+    if kinds.at(i) == "text" or in-comment {
+      let (rewritten, open) = _cites-in-line(line, in-comment)
+      in-comment = open
+      out.push(rewritten)
+    } else {
+      out.push(line)
     }
-    if fenced { lines.push(line); continue }
-    // Even pieces lie outside inline code spans.
-    let pieces = line.split("`")
-    lines.push(pieces.enumerate().map(((i, piece)) => if calc.even(i) { _cites-in-text(piece) } else { piece }).join("`"))
   }
-  lines.join("\n")
+  out.join("\n")
 }
 
 #let _keyword-line(label, items, sep) = if items.len() > 0 {

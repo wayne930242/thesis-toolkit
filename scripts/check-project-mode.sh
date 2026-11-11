@@ -88,6 +88,17 @@ cat >>"$paper/body.md" <<'MD'
 
 多筆 [@fine2012; @sosa2007, 23]。只印年 [-@rosen2010]。如 @sosa2007 所說，
 德性即能力。
+
+@fine2012 開頭的段落有**粗體**與腳註[^a]，
+還有 @rosen2010(2010) 與 @sosa2007 [連結](https://example.org)。
+[^a]: 第一個腳註。
+[^b]: 第二個腳註。
+
+第二個註在這裡[^b]。<!-- 草稿備註 [@sosa2007] 不該出現 -->
+
+甲欄 | 乙欄
+---|---
+一 | 二
 MD
 log="$(tt compile paper main 2>&1)" || { echo "$log" >&2; echo "FAIL compile journal" >&2; exit 1; }
 text="$(pdftotext "$paper/src/main/main.pdf" -)"
@@ -99,4 +110,11 @@ check "journal PDF prints a narrative citation" has "$text" "Sosa (2007) 所說"
 check "journal PDF joins the wrapped Chinese line" has "$text" "所說，德性即能力"
 check "journal PDF numbers the heading" has "$text" "肆、引註"
 check "journal PDF omits the front matter" lacks "$text" "前置資料"
+check "journal PDF keeps bold and footnotes in a paragraph opening with a citation" lacks "$text" "**粗體**"
+check "journal PDF renders a citation-led paragraph's footnote" has "$text" "第一個腳註"
+check "journal PDF keeps two adjacent footnote definitions apart" has "$text" "第二個腳註"
+check "journal PDF has no literal footnote marker" lacks "$text" "[^"
+check "journal PDF keeps an HTML comment hidden" lacks "$text" "草稿備註"
+check "journal PDF keeps a link after a narrative citation" lacks "$text" "](https"
+check "journal PDF renders a table without leading pipes" lacks "$text" "---|"
 exit "$fail"
