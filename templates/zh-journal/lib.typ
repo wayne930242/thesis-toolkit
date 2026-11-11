@@ -50,6 +50,9 @@
 
 #let _fence-open = regex("^ {0,3}(`{3,}|~{3,})")
 #let _indented = regex("^( {4}|\t)")
+#let _footnote-def = regex("^ {0,3}\[\^[^\]]+\]:")
+// A line ending in a narrative `@key`: joining would glue the next word to the key.
+#let _ends-with-key = regex("@[\p{L}\p{N}_:./-]+\s*$")
 #let _list-item = regex("^ {0,3}([-*+]|\d+[.)])(\s|$)")
 // A line no following line can continue: an ATX heading, HTML (a comment's first or last line),
 // a thematic break, or a setext underline.
@@ -84,7 +87,10 @@
     } else if line.match(_indented) != none and (prev == "code" or (prev == "blank" and not in-list)) {
       "code"
     } else {
-      if line.match(_indented) == none { in-list = line.match(_list-item) != none }
+      if line.match(_indented) == none {
+        // A footnote definition's later paragraphs are indented like a list item's.
+        in-list = line.match(_list-item) != none or line.match(_footnote-def) != none
+      }
       "text"
     }
     kinds.push(kind)
@@ -99,7 +105,7 @@
 /// newlines, and so do breaks between Latin words. Pass Markdown text read in your project:
 /// `render(zh-join-lines(read("body.md")))`.
 #let zh-join-lines(source) = {
-  let lines = source.split("\n")
+  let lines = source.replace("\r\n", "\n").split("\n")
   let kinds = _line-kinds(lines)
   let parts = ()
   let joined = false
@@ -113,6 +119,7 @@
         and next.match(_block-start) == none
         and line.match(_pipe) == none and next.match(_pipe) == none
         and not line.ends-with("  ") and not line.ends-with("\\")
+        and line.match(_ends-with-key) == none
         and (line.trim().clusters().last().match(_cjk) != none
           or next.trim().clusters().first().match(_cjk) != none)
     )
@@ -186,10 +193,19 @@
 
 /// Rewrite the citations in `text`, a piece of one line outside code spans and comments.
 #let _cites-in-text(text) = {
+  if text.match(regex("(^|[^\\\\])\[\s*-?@" + _key + "[^\]]*$")) != none {
+    panic("zh-journal: keep a bracketed citation on one line: " + text.trim())
+  }
   let out = ""
   let cursor = 0
   for m in text.matches(_cite-pattern) {
     let c = m.captures
+    if text.slice(0, m.start).ends-with("\\") {
+      // `\[@a\]`: escaped brackets are text.
+      out += text.slice(cursor, m.end)
+      cursor = m.end
+      continue
+    }
     // A `(` or `[` right after `]` makes the brackets a link's text.
     let after = text.slice(m.end).clusters().at(0, default: "")
     let link = after == "(" or after == "["
@@ -220,11 +236,7 @@
       }
     }
   }
-  let rest = text.slice(cursor)
-  if rest.match(regex("\[\s*-?@" + _key + "[^\[\]]*$")) != none {
-    panic("zh-journal: keep a bracketed citation on one line: " + rest.trim())
-  }
-  out + rest
+  out + text.slice(cursor)
 }
 
 #let _inline-token = regex("<!--|-->|`+")
@@ -275,7 +287,7 @@
 /// (`@a 指出`, not `@a指出`), keep a bracketed group on one line, and write text outside the
 /// brackets (`參見 [@a]`).
 #let md-cites(source) = {
-  let lines = source.split("\n")
+  let lines = source.replace("\r\n", "\n").split("\n")
   let kinds = _line-kinds(lines)
   let in-comment = false
   let out = ()

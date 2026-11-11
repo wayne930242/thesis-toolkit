@@ -46,6 +46,9 @@ const cases: [string, string][] = [
   ["[^1]: @a 指出，*書名*", `[^1]: ${ZWSP}${raw(cite("a", ', form: "prose"'))} 指出，*書名*`],
   ["[^2]: [@b, 23]；另見", `[^2]: ${ZWSP}${raw(cite("b", ', supplement: "23"'))}；另見`],
   ["甲 [-@a, 5]", `甲 ${raw(`(${cite("a", ', form: "year"')}#", 5";)`)}`],
+  ["[^1]: 第一段。\n\n    第二段 @b 指出", `[^1]: 第一段。\n\n    第二段 ${raw(cite("b", ', form: "prose"'))} 指出`],
+  ["見 \\[@b\\] 說", "見 \\[@b\\] 說"],
+  ["甲\r\n@b 說", `甲\n${ZWSP}${raw(cite("b", ', form: "prose"'))} 說`],
 ];
 
 function typst(body: string): ReturnType<typeof spawnSync> {
@@ -71,6 +74,7 @@ test("md-cites stops with its own message on citation forms it cannot express", 
     ["[see @a, p. 3]", "write text outside the citation brackets"],
     ["甲 [@a;", "keep a bracketed citation on one line"],
     ["甲 [-@a, x-->y]", "must not contain `-->`"],
+    ["甲 [@a; @b;", "keep a bracketed citation on one line"],
   ];
   for (const [input, message] of failures) {
     const result = typst(`#md-cites(${JSON.stringify(input)})`);

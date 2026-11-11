@@ -39,6 +39,10 @@ const cases: [string, string][] = [
   ["---\n分隔線後", "---\n分隔線後"],
   ["***\n星號線後", "***\n星號線後"],
   ["標題乙\n===\n其後段落", "標題乙\n===\n其後段落"],
+  ["最早見於 @a\n的著作", "最早見於 @a\n的著作"],
+  ["<!-- 多行\r\n註解 -->\r\n註解後", "<!-- 多行\n註解 -->\n註解後"],
+  ["硬換行  \r\n下一行", "硬換行  \n下一行"],
+  ["[^1]: 一段。\n\n    第二段\n    續行", "[^1]: 一段。\n\n    第二段續行"],
 ];
 
 test("zh-join-lines joins wrapped CJK paragraph lines and keeps Markdown structure", () => {
