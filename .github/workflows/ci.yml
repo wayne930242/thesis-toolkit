@@ -28,4 +28,7 @@ jobs:
           node dist/cli.js compile templates/ntu-thesis/example.typ
           node dist/cli.js compile templates/anonymous-essay/example.typ
           node dist/cli.js compile templates/zh-journal/example.typ
+      # pdftotext/pdfinfo for the zh-journal anonymity check.
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+      - run: scripts/check-zh-journal.sh
       - run: scripts/check-pack.sh

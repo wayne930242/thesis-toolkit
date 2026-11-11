@@ -26,14 +26,14 @@ own repository and call the CLI through `npx`. Read [README.md](README.md) for t
 | Change | Check |
 |---|---|
 | `src/**`, `test/**` | `npm run typecheck && npm test` |
-| `templates/**`, `fonts/**` | `npm run build`, then `node dist/cli.js compile templates/<name>/example.typ` for each changed template and each affected consumer target |
+| `templates/**`, `fonts/**` | `npm run build`, then `node dist/cli.js compile templates/<name>/example.typ` for each changed template and each affected consumer target; `scripts/check-zh-journal.sh` for zh-journal (needs poppler-utils) |
 | `src/commands/mcp.ts` | `node dist/cli.js mcp research-hub` answers MCP `initialize` and `tools/list` |
 | `package.json` `files` | `npm pack --dry-run` lists no `lean/`, `docs/`, `scripts/`, or PDFs |
 | `lean/**`, `scripts/**` | `scripts/lean build`; `uv run scripts/lean_to_typst.py lean/latexExport.lean -o /tmp/out.typ` |
 
 ## Release
 
-CI (`.github/workflows/ci.yml`) runs typecheck, tests, the template compile, and the pack check.
+CI (`.github/workflows/ci.yml`) runs typecheck, tests, the template compiles, the zh-journal anonymity check, and the pack check.
 Pushing a `v*` tag whose version matches `package.json` publishes through npm trusted publishing
 (`.github/workflows/publish.yml`). Check that the CI run of the tagged commit is green as well.
 CI installs npm exactly as `publish.yml` does (`npm@latest`): v0.1.1 broke when npm 12 changed
