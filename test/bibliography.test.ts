@@ -178,3 +178,10 @@ test("R-F009: a symlink back to an ancestor directory does not loop", () => {
   symlinkSync(dir, join(dir, "src", "root"));
   assert.deepEqual(sourceFiles(dir).map((file) => file.slice(dir.length + 1)), ["src/main.typ"]);
 });
+
+test("RR-F005: a % earlier on the line, or an escaped \\%, does not comment out a later entry", () => {
+  const bib = `@misc{pct, title = {50\\% off}} @misc{same, title = {Same Line}}\n@misc{x, note = {a}} % c @misc{gone, title = {G}}\n${BIB}`;
+  const keys = [...parseBib(bib).entries.keys()];
+  assert.ok(keys.includes("same"), keys.join(","));
+  assert.ok(!keys.includes("gone"), keys.join(","));
+});

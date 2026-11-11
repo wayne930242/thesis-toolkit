@@ -39,19 +39,26 @@
 /// line), which editors such as MyGitNotes write and cmarker would print as text. Run it
 /// first: `md-cites(zh-join-lines(strip-frontmatter(read("body.md"))))`.
 #let strip-frontmatter(source) = {
-  let m = source.match(regex("^---[ \t]*\r?\n(?:[\s\S]*?\r?\n)??(?:---|\.\.\.)[ \t]*(?:\r?\n|$)"))
+  // As in Pandoc, the line after the opening `---` is not blank, so a document that opens with
+  // a thematic break keeps its text. An empty block (`---` then `---`) is still front matter.
+  let close = "(?:---|\.\.\.)[ \t]*(?:\r?\n|$)"
+  let m = source.match(regex(
+    "^\u{FEFF}?---[ \t]*\r?\n(?:" + close + "|[^\r\n]*\S[^\r\n]*\r?\n(?:[\s\S]*?\r?\n)??" + close + ")",
+  ))
   if m == none { source } else { source.slice(m.end) }
 }
 
 #let _fence-open = regex("^ {0,3}(`{3,}|~{3,})")
 #let _indented = regex("^( {4}|\t)")
 #let _list-item = regex("^ {0,3}([-*+]|\d+[.)])(\s|$)")
-// A line no following line can continue: an ATX heading.
-#let _closed-line = regex("^ {0,3}#")
+// A line no following line can continue: an ATX heading, HTML (a comment's first or last line),
+// a thematic break, or a setext underline.
+#let _closed-line = regex("^ {0,3}(#|<)|-->[ \t]*$|^ {0,3}(=+|-+|([-*_][ \t]*){3,})[ \t]*$")
 // A line that starts its own block, or ends the paragraph above it: list items, quotes,
 // headings, HTML, setext underlines and thematic breaks, fences, blank lines, and footnote
 // or link reference definitions.
-#let _block-start = regex("^ {0,3}([-*+>#<=_]|\d+[.)]|```|~~~|$|\[[^\]]+\]:)")
+// Any indentation: a nested list item indented by a tab or four spaces still starts a block.
+#let _block-start = regex("^[ \t]*([-*+>#<=_]|\d+[.)]|```|~~~|$|\[[^\]]+\]:)")
 // An unescaped `|`: the line may be a table row, with or without leading pipes.
 #let _pipe = regex("(^|[^\\\\])\|")
 
@@ -162,7 +169,14 @@
       panic("zh-journal: -@key (year only) must stand alone in its brackets: [" + group + "]")
     }
     let i = items.first()
-    "(" + _cite-call(i.key, locator: i.locator, form: "year") + ")"
+    // Typst's year form drops a supplement, so the locator follows as a string (never markup).
+    let locator = if i.locator == none { "" } else {
+      if i.locator.contains("-->") {
+        panic("zh-journal: a citation locator must not contain `-->`: " + i.locator)
+      }
+      "#" + repr(", " + i.locator) + ";"
+    }
+    "(" + _cite-call(i.key, form: "year") + locator + ")"
   } else {
     items.map(i => _cite-call(i.key, locator: i.locator)).join()
   }
@@ -206,12 +220,16 @@
       }
     }
   }
-  out + text.slice(cursor)
+  let rest = text.slice(cursor)
+  if rest.match(regex("\[\s*-?@" + _key + "[^\[\]]*$")) != none {
+    panic("zh-journal: keep a bracketed citation on one line: " + rest.trim())
+  }
+  out + rest
 }
 
 #let _inline-token = regex("<!--|-->|`+")
 // A line whose content would start with our `<!--`: CommonMark reads that as an HTML block.
-#let _html-start = regex("^([ \t]*(?:(?:[-*+]|\d+[.)])[ \t]+|>[ \t]?)*)<!--raw-typst")
+#let _html-start = regex("^([ \t]*(?:(?:[-*+]|\d+[.)])[ \t]+|>[ \t]?|\[\^[^\]]+\]:[ \t]*)*)<!--raw-typst")
 
 /// Rewrite one text line, skipping code spans and HTML comments; returns the new line and
 /// whether a comment is still open at its end.

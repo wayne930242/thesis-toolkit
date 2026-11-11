@@ -99,6 +99,16 @@ cat >>"$paper/body.md" <<'MD'
 甲欄 | 乙欄
 ---|---
 一 | 二
+
+第三註[^c]。
+
+[^c]: @fine2012 指出，*註中斜體*。
+
+<!-- 註解行 -->
+註解下的段落有**註解下粗體**。
+
+- 外層項
+    - 四格巢狀項
 MD
 log="$(tt compile paper main 2>&1)" || { echo "$log" >&2; echo "FAIL compile journal" >&2; exit 1; }
 text="$(pdftotext "$paper/src/main/main.pdf" -)"
@@ -117,4 +127,7 @@ check "journal PDF has no literal footnote marker" lacks "$text" "[^"
 check "journal PDF keeps an HTML comment hidden" lacks "$text" "草稿備註"
 check "journal PDF keeps a link after a narrative citation" lacks "$text" "](https"
 check "journal PDF renders a table without leading pipes" lacks "$text" "---|"
+check "journal PDF keeps italics in a footnote that opens with a citation" lacks "$text" "*註中斜體*"
+check "journal PDF renders the paragraph under a comment line" lacks "$text" "**註解下粗體**"
+check "journal PDF keeps a four-space nested list item" lacks "$text" "外層項- 四格"
 exit "$fail"

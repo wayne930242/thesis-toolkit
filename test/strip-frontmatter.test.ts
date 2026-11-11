@@ -14,6 +14,8 @@ const cases: [string, string][] = [
   ["正文\n---\na: b\n---\n", "正文\n---\na: b\n---\n"],
   ["---\na: b\n---", ""],
   ["", ""],
+  ["---\n\n第一段。\n\n---\n\n第二段。", "---\n\n第一段。\n\n---\n\n第二段。"],
+  ["\uFEFF---\ntitle: x\n---\n正文", "正文"],
 ];
 
 test("strip-frontmatter drops a leading YAML block and nothing else", () => {

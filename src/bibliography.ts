@@ -76,18 +76,21 @@ export function parseBib(bib: string): ParsedBib {
   const duplicates = new Set<string>();
   const start = /@\s*([A-Za-z]+)\s*([{(])/g;
   let match: RegExpExecArray | null;
+  let previousEnd = 0;
   while ((match = start.exec(bib)) !== null) {
     const type = (match[1] as string).toLowerCase();
     const open = match.index + match[0].length - 1;
     const end = blockEnd(bib, open);
-    const lineStart = bib.lastIndexOf("\n", match.index) + 1;
-    if (bib.slice(lineStart, match.index).includes("%")) {
+    // Only the text since the line's start or the previous entry's end can comment this one out.
+    const from = Math.max(bib.lastIndexOf("\n", match.index) + 1, previousEnd);
+    if (/(^|[^\\])%/.test(bib.slice(from, match.index))) {
       // A `%` comment (`% old: @book{key, ...}`): BibTeX and Typst skip it, so must we.
       start.lastIndex = match.index + match[0].length;
       continue;
     }
     const text = bib.slice(match.index, end);
     start.lastIndex = end;
+    previousEnd = end;
     if (type === "comment") {
       continue;
     }
