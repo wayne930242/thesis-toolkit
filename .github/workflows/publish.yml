@@ -34,6 +34,7 @@ jobs:
       # pdftotext/pdfinfo for the zh-journal anonymity check.
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
       - run: scripts/check-zh-journal.sh
+      - run: scripts/check-project-mode.sh
       - run: scripts/check-pack.sh
       - name: Check release version
         run: test "v$(node -p 'require("./package.json").version')" = "$GITHUB_REF_NAME"

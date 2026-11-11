@@ -36,9 +36,11 @@ npx thesis-toolkit link                        # expose @local packages to edito
 npx thesis-toolkit mcp research-hub            # MCP server over stdio
 ```
 
-`compile <project> <target>` writes `<project>/references.generated.bib` with only the entries the
-project cites and passes it to Typst as `--input bib-path=<root-relative path>`. It always passes the
-bundled fonts and Typst packages, so documents need no font or template paths of their own.
+`compile <project> <target>` writes `<project>/references.generated.bib` with the entries the
+project's `.typ` and `.md` files reference (`@key`, `<key>`, `label("key")`, plus their `crossref`
+parents and every `@string`) and passes it to Typst as `--input bib-path=<root-relative path>`.
+It always passes the bundled fonts and Typst packages, so documents need no font or template
+paths of their own.
 
 ## The ntu-thesis template
 

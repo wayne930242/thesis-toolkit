@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
-import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { findConfigFile, loadConfig, requireConfig } from "../config.ts";
 import { writeSubset } from "../bibliography.ts";
 import { ProjectError, ToolkitError } from "../errors.ts";
@@ -9,8 +9,9 @@ export const compileUsage = `thesis-toolkit compile <project> <target> [-w|--wat
 thesis-toolkit compile <file.typ> [-w|--watch]
 
   <project> <target>  Compile <projectsDir>/<project>/src/<target>/main.typ to main.pdf beside it.
-                      Writes <project>/references.generated.bib with only the cited entries of the
-                      configured bibliography and passes it as --input bib-path=<root-relative path>.
+                      Writes <project>/references.generated.bib with the entries of the configured
+                      bibliography that the project's .typ and .md files reference, and passes it as
+                      --input bib-path=<root-relative path>.
   <file.typ>          Compile one file to <file>.pdf.
   -w, --watch         Recompile on change (restart after citing a new key).`;
 
@@ -31,7 +32,8 @@ function requireDir(dir: string, what: string, parent: string): void {
 /** Typst resolves a leading "/" against --root, so inputs naming files must be root-relative. */
 export function rootRelative(root: string, file: string): string {
   const rel = relative(root, file);
-  if (rel.startsWith("..") || resolve(root, rel) !== resolve(file)) {
+  // `..drafts` is a directory name inside the root, not a step out of it.
+  if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {
     throw new ProjectError(`${file} is outside the Typst root ${root}`);
   }
   return `/${rel.split(sep).join("/")}`;
@@ -70,10 +72,16 @@ export async function compile(args: string[], cwd: string): Promise<number> {
   }
 
   const subset = join(projectDir, "references.generated.bib");
-  const result = writeSubset(join(projectDir, "src"), config.bibliography, subset);
+  // Check before writing, so a project outside the root leaves no generated file behind.
+  const bibPath = rootRelative(config.root, subset);
+  // The whole project, not only src/: new-project keeps chapters/ beside src/.
+  const result = writeSubset(projectDir, config.bibliography, subset);
   console.error(`bibliography: ${result.kept}/${result.total} entries → ${subset}`);
   if (result.missing.length > 0) {
     console.error(`warning: cited keys missing from ${config.bibliography}: ${result.missing.join(", ")}`);
+  }
+  if (result.duplicates.length > 0) {
+    console.error(`warning: keys defined more than once in ${config.bibliography}: ${result.duplicates.join(", ")}`);
   }
 
   const output = join(targetDir, "main.pdf");
@@ -82,7 +90,7 @@ export async function compile(args: string[], cwd: string): Promise<number> {
     input,
     output,
     root: config.root,
-    inputs: { "bib-path": rootRelative(config.root, subset) },
+    inputs: { "bib-path": bibPath },
   });
   if (code === 0 && !watch) {
     console.error(`compiled: ${output}`);
