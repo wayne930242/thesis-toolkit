@@ -70,22 +70,21 @@
 #make-verification()
 
 // 6. 字體測試區域
-#page[
-  = 字體配置測試
+= 字體配置測試
 
-  #check-font-availability()
+#check-font-availability()
 
-  == 混合語言測試
-  This is English text mixed with 中文字體測試。Numbers: 123456789.
-  
-  === 各種標點符號
-  中文標點：，。！？：；「」『』（）【】
-  English punctuation: ,.!?:;"'()[]{}
-  
-  === 特殊符號
-  數學符號：± × ÷ ∑ ∏ ∫ ∞ ≈ ≠ ≤ ≥ α β γ δ π λ μ σ
-  其他符號：© ® ™ § ¶ † ‡ • ◦ ‰ ‱
-]
+== 混合語言測試
+This is English text mixed with 中文字體測試。Numbers: 123456789.
+
+=== 各種標點符號
+中文標點：，。！？：；「」『』（）【】
+English punctuation: ,.!?:;"'()[]{}
+
+=== 特殊符號
+數學符號：± × ÷ ∑ ∏ ∫ ∞ ≈ ≠ ≤ ≥ α β γ δ π λ μ σ
+其他符號：© ® ™ § ¶ † ‡ • ◦ ‰ ‱
+
 
 // 7. 致謝
 #make-acknowledgement[

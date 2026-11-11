@@ -1,4 +1,4 @@
-#import "@local/anonymous-essay:0.1.0": essay, references
+#import "@local/anonymous-essay:0.1.1": essay, references
 
 #show: essay.with(
   title: [On the Example Essay],

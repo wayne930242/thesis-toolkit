@@ -10,7 +10,7 @@
   student-id: "",
   oral-date: "",
 ) = {
-  pagebreak()
+  pagebreak(weak: true)
   set page(numbering: "i")
   
   // 日期格式化
@@ -26,7 +26,7 @@
     #v(1fr)
     
     // 標題 (24pt, 36pt行距)
-    #text(size: 24pt, font: ntu-fonts)[#university#degree-zh 學位#type-zh]
+    #text(size: 24pt, font: ntu-fonts)[#university#(degree-zh + "學位" + type-zh)]
     #v(0.5em)
     #text(size: 26pt, weight: "bold", font: ntu-fonts)[口試委員會審定書]
     
@@ -48,7 +48,7 @@
     first-line-indent: 2em
   )
   text(size: 16pt, font: ntu-fonts)[
-    本論文係#author-zh 君（#student-id）在#university#institute 完成之#degree-zh 學位#type-zh，於民國 #roc-year 年 #month 月 #day 日承下列考試委員審查通過及口試及格，特此證明
+    本論文係#author-zh 君（#student-id）在#university#institute 完成之#(degree-zh + "學位" + type-zh)，於民國 #roc-year 年 #month 月 #day 日承下列考試委員審查通過及口試及格，特此證明
   ]
   
   v(1fr)

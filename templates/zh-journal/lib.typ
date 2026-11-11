@@ -168,6 +168,15 @@
   show figure.where(kind: table): set figure.caption(position: top)
   show figure.caption: set text(size: 10.5pt)
   set table(stroke: (x, y) => if y == 0 { (top: 0.8pt, bottom: 0.5pt) } else { none })
+  // Three-line table: the stroke rule above draws the top and header rules; close it with a bottom rule.
+  show table: it => {
+    let fields = it.fields()
+    let cells = fields.remove("children")
+    // The rebuilt table matches this rule again; the closing hline marks it as done.
+    if cells.len() > 0 and cells.last().func() == table.hline { it } else {
+      table(..fields, ..cells, table.hline(stroke: 0.8pt))
+    }
+  }
 
   // Title block.
   align(center, {

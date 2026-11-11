@@ -46,7 +46,7 @@ ntu-thesis/
 
 ```typst
 // 專案內的 bib.typ
-#import "@local/ntu-thesis:0.1.0": chapter-bib as ntu-chapter-bib
+#import "@local/ntu-thesis:0.1.1": chapter-bib as ntu-chapter-bib
 #let chapter-bib = ntu-chapter-bib.with(path(sys.inputs.at("bib-path", default: "/references.bib")))
 ```
 
@@ -55,7 +55,7 @@ ntu-thesis/
 ### 1. 初始化模板
 
 ```typst
-#import "@local/ntu-thesis:0.1.0": setup
+#import "@local/ntu-thesis:0.1.1": setup
 
 #let (
   // 頁面元件

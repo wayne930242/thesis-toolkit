@@ -39,6 +39,10 @@
   show heading.where(level: 1): it => {
     pagebreak(weak: true)
     v(1.5em)
+    // 無編號的一級標題（如參考文獻）只置中顯示標題，不加「第N章」
+    if it.numbering == none {
+      return align(center)[#text(size: 18pt, weight: "bold", font: ntu-heading-fonts)[#it.body]] + v(1em)
+    }
     align(center)[
       #text(
         size: 18pt,     // 章標題字體大小

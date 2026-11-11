@@ -28,7 +28,10 @@
   show heading.where(level: 2): set text(size: size * 1.05)
   show heading.where(level: 3): set text(size: size, weight: "regular", style: "italic")
 
-  show quote.where(block: true): it => pad(left: 2em, right: 2em, it.body)
+  show quote.where(block: true): it => pad(left: 2em, right: 2em, {
+    it.body
+    if it.attribution != none { align(right, [— #it.attribution]) }
+  })
   show link: set text(fill: rgb("#1f3a93"))
 
   if title != none {
