@@ -33,6 +33,38 @@
   else { "(" + str(last) + ") " }
 }
 
+#let _cjk = regex("[\p{Han}\p{Hiragana}\p{Katakana}\p{Hangul}\u{3000}-\u{303F}\u{FF00}-\u{FFEF}]")
+// A line that a following text line cannot continue, and a line that starts a new block.
+#let _closed-line = regex("^\s{0,3}(#|\||```|~~~)")
+#let _block-start = regex("^\s{0,3}([-*+>#|<]|\d+[.)]|```|~~~|$)")
+#let _fence = regex("^\s{0,3}(```|~~~)")
+
+/// Join Markdown lines that continue one paragraph when either side of the break is CJK, so
+/// a wrapped Chinese sentence gets no stray space. Headings, lists, quotes, tables, code
+/// blocks, and hard breaks (two trailing spaces or `\`) keep their newlines, and so do breaks
+/// between Latin words. Pass Markdown text read in your project:
+/// `render(zh-join-lines(read("body.md")))`.
+#let zh-join-lines(source) = {
+  let lines = source.split("\n")
+  let parts = ()
+  let fenced = false
+  for (i, line) in lines.enumerate() {
+    if line.match(_fence) != none { fenced = not fenced }
+    let next = lines.at(i + 1, default: none)
+    let join = (
+      not fenced and next != none and line.trim() != ""
+        and line.match(_closed-line) == none
+        and next.match(_block-start) == none
+        and not line.ends-with("  ") and not line.ends-with("\\")
+        and (line.trim().clusters().last().match(_cjk) != none
+          or next.trim().clusters().first().match(_cjk) != none)
+    )
+    parts.push(if join { line.trim(at: end) } else { line })
+    if next != none { parts.push(if join { "" } else { "\n" }) }
+  }
+  parts.join(default: "")
+}
+
 #let _keyword-line(label, items, sep) = if items.len() > 0 {
   par(first-line-indent: 0pt)[#text(weight: "bold")[#label]#items.join(sep)]
 }

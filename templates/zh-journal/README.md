@@ -46,7 +46,31 @@ Typst 套件 `@local/zh-journal:0.1.2`：臺灣 TSSCI 人文期刊常見的投�
 | `bib`、`bib-style`、`bib-title` | `none`、`"chicago-author-date"`、`[參考文獻]` | 參考文獻來源、CSL 樣式與標題 |
 | `paper`、`font-size` | `"a4"`、`12pt` | 紙張與正文字級 |
 
-套件另外匯出 `zh-heading-numbering`（標題編號函式）與 `zh-upper`（1–99 的「壹、貳、參」大寫數字）。
+套件另外匯出 `zh-heading-numbering`（標題編號函式）、`zh-upper`（1–99 的「壹、貳、參」大寫數字）與 `zh-join-lines`（見下節）。
+
+## 用 Markdown 寫正文
+
+不想直接寫 Typst 時，正文與摘要可以寫成 Markdown，用任何 Markdown 編輯器編輯（例如 MyGitNotes），版面仍由本套件排。建立這種專案：
+
+```bash
+npx thesis-toolkit new-project my-paper "論文題目" --template journal
+npx thesis-toolkit compile my-paper main
+```
+
+專案根目錄的 `body.md`、`abstract.md`、`abstract-en.md` 是正文與摘要；`src/main/main.typ` 只放題目、作者、關鍵詞與 `anonymous` 開關。Markdown 透過 [`@preview/cmarker`](https://typst.app/universe/package/cmarker/) 轉成 Typst，第一次編譯會從網路下載它。
+
+| Markdown | 排出來 |
+|---|---|
+| `#`、`##`、`###` | 壹、／一、／（一） |
+| `[@sosa2007]` | (Sosa 2007)，並列入參考文獻 |
+| `[23][@sosa2007]` | (Sosa 2007, 23) |
+| `[^1]` 與另起一行的 `[^1]: 內容` | 頁尾腳註 |
+| `![說明](figures/圖一.png)` | 圖片，路徑相對於專案根目錄 |
+
+同一段落裡的換行，只要換行處的一側是中日韓文字或全形標點，`zh-join-lines` 就會把兩行接起來，不會在中文字之間多出空格；標題、條列、引文、表格、程式碼與硬換行（行尾兩個空格或 `\`）不受影響。
+
+在 MyGitNotes 的即時預覽裡，`[@sosa2007]` 會照原樣顯示，存檔時也一字不改。
+
 
 ## 已知限制
 
