@@ -1,6 +1,6 @@
 {
   "name": "thesis-toolkit",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Typst dissertation templates, fonts, a project compiler, and a research MCP launcher",
   "license": "MIT",
   "author": "Wei-Hung",
