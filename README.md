@@ -96,7 +96,7 @@ cache, then runs research-hub over stdio. `RSH_*` variables pass through:
   "mcpServers": {
     "research-hub": {
       "command": "npx",
-      "args": ["-y", "thesis-toolkit@0.1.5", "mcp", "research-hub"],
+      "args": ["-y", "thesis-toolkit@0.1.6", "mcp", "research-hub"],
       "env": { "RSH_LIBRARY_API_URL": "https://…", "RSH_DOWNLOAD_DIRECTORY": "/abs/path/downloads" }
     }
   }

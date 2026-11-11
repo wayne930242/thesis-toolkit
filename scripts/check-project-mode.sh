@@ -138,5 +138,5 @@ check "journal PDF keeps italics in a footnote that opens with a citation" lacks
 check "journal PDF renders the paragraph under a comment line" lacks "$text" "**註解下粗體**"
 check "journal PDF keeps a four-space nested list item" lacks "$text" "外層項- 四格"
 check "journal PDF cites in a footnote's second paragraph" has "$text" "長註第二段，Sosa (2007) 指出"
-check "journal PDF keeps a line-final narrative key apart from the next line" has "$text" "Rosen (2010)"
+check "journal PDF keeps a line-final narrative key apart from the next line" has "$text" "Rosen (2010) 的著作"
 exit "$fail"
