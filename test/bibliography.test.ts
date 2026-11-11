@@ -158,3 +158,23 @@ test("referencedTokens trims trailing sentence punctuation but keeps inner dots 
     assert.ok(tokens.has(token), token);
   }
 });
+
+test("R-F006: an entry inside a % comment line is skipped, so a commented duplicate is no duplicate", () => {
+  const bib = `% old version: @book{sosa2007, title = {Old}}\n${BIB}`;
+  const parsed = parseBib(bib);
+  assert.deepEqual([...parsed.entries.keys()].sort(), ["fine2012", "rosen2010", "sosa2007"]);
+  assert.match(parsed.entries.get("sosa2007")?.text ?? "", /A Virtue Epistemology/);
+  assert.deepEqual(kept("@sosa2007", bib), ["sosa2007"]);
+});
+
+test("R-F007: a key holding `/`, as md-cites accepts, is kept", () => {
+  const bib = `${BIB}\n\n@book{a/b,\n  title = {Slash}\n}`;
+  assert.deepEqual(kept("見 [@a/b]。", bib, "body.md"), ["a/b"]);
+});
+
+test("R-F009: a symlink back to an ancestor directory does not loop", () => {
+  const dir = fixture({ "src/main.typ": "@sosa2007" });
+  symlinkSync(".", join(dir, "src", "self"));
+  symlinkSync(dir, join(dir, "src", "root"));
+  assert.deepEqual(sourceFiles(dir).map((file) => file.slice(dir.length + 1)), ["src/main.typ"]);
+});

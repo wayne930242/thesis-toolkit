@@ -1,10 +1,11 @@
-import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import { ProjectError } from "./errors.ts";
 
-// Characters Typst accepts in a label written as `@label`. A trailing `.` or `:` ends the
-// sentence rather than the label, as Typst itself reads it.
-const REF = /@([\p{L}\p{N}_\-:.]+)/gu;
+// Characters Typst accepts in a label written as `@label`, plus the `/` a Pandoc key may hold
+// (zh-journal's md-cites accepts it). A trailing `.` or `:` ends the sentence rather than the
+// label, as Typst itself reads it.
+const REF = /@([\p{L}\p{N}_\-:./]+)/gu;
 const ANGLE = /<([^<>\s]+)>/g;
 const LABEL_CALL = /label\(\s*"([^"]+)"\s*\)/g;
 // Explicit citations, the only form that cannot be a cross-reference to a heading or figure.
@@ -79,6 +80,12 @@ export function parseBib(bib: string): ParsedBib {
     const type = (match[1] as string).toLowerCase();
     const open = match.index + match[0].length - 1;
     const end = blockEnd(bib, open);
+    const lineStart = bib.lastIndexOf("\n", match.index) + 1;
+    if (bib.slice(lineStart, match.index).includes("%")) {
+      // A `%` comment (`% old: @book{key, ...}`): BibTeX and Typst skip it, so must we.
+      start.lastIndex = match.index + match[0].length;
+      continue;
+    }
     const text = bib.slice(match.index, end);
     start.lastIndex = end;
     if (type === "comment") {
@@ -147,7 +154,13 @@ export function explicitCitations(source: string): Set<string> {
 }
 
 /** Source files under `dir`, skipping dot-entries (editor locks, `.git`) and `node_modules`. */
-export function sourceFiles(dir: string): string[] {
+export function sourceFiles(dir: string, visited: Set<string> = new Set()): string[] {
+  // Real paths seen so far: a symlink back to an ancestor would otherwise recurse until ELOOP.
+  const real = realpathSync(dir);
+  if (visited.has(real)) {
+    return [];
+  }
+  visited.add(real);
   const files: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.name.startsWith(".") || SKIPPED_DIRS.has(entry.name)) {
@@ -157,7 +170,7 @@ export function sourceFiles(dir: string): string[] {
     // Follow symlinks, but skip dangling ones instead of failing the compile.
     const stat = entry.isSymbolicLink() ? statSync(path, { throwIfNoEntry: false }) : entry;
     if (stat?.isDirectory()) {
-      files.push(...sourceFiles(path));
+      files.push(...sourceFiles(path, visited));
     } else if (stat?.isFile() && SOURCE_EXTENSIONS.some((ext) => entry.name.endsWith(ext))) {
       files.push(path);
     }
