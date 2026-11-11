@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { lstatSync, mkdirSync, readFileSync, readlinkSync, renameSync, rmSync, symlinkSync } from "node:fs";
+import { lstatSync, mkdirSync, readFileSync, readdirSync, readlinkSync, renameSync, rmSync, symlinkSync, type Dirent } from "node:fs";
 import { dirname, join } from "node:path";
 import { runChild } from "./child.ts";
 import { DependencyError, ToolkitError } from "./errors.ts";
@@ -66,11 +66,56 @@ export function linkPackage(root: string, pkg: TypstPackage): string {
   return link;
 }
 
+/** A Typst package version, which is also the name of its directory or link. */
+const VERSION = /^\d+\.\d+\.\d+$/;
+
+/** The entries of `dir`, or none when it does not exist. */
+function entriesOf(dir: string): Dirent[] {
+  try {
+    return readdirSync(dir, { withFileTypes: true });
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === "ENOENT" || code === "ENOTDIR") {
+      return [];
+    }
+    throw error;
+  }
+}
+
+/**
+ * Remove the links `linkPackage` left at other versions of this package directory, as happens
+ * after a typst.toml bump: such a link resolves the old import to a manifest of another version
+ * ("package manifest contains mismatched version"). Only version-named symlinks pointing at this
+ * exact directory go; real directories and links to anywhere else stay. Returns the removed versions.
+ */
+export function pruneStaleLinks(root: string, pkg: TypstPackage): string[] {
+  const dir = join(root, pkg.namespace, pkg.name);
+  const removed: string[] = [];
+  for (const entry of entriesOf(dir)) {
+    if (entry.name === pkg.version || !VERSION.test(entry.name) || !entry.isSymbolicLink()) {
+      continue;
+    }
+    const link = join(dir, entry.name);
+    try {
+      if (readlinkSync(link) !== pkg.dir) {
+        continue;
+      }
+    } catch {
+      // A concurrent run removed it first.
+      continue;
+    }
+    rmSync(link, { force: true });
+    removed.push(entry.name);
+  }
+  return removed.sort();
+}
+
 /** A `--package-path` directory that resolves this toolkit's `@local` packages. */
 export function packagePath(): string {
   const root = join(cacheDir(), "typst-packages");
   for (const pkg of toolkitPackages()) {
     linkPackage(root, pkg);
+    pruneStaleLinks(root, pkg);
   }
   return root;
 }
