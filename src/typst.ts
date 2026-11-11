@@ -1,6 +1,7 @@
-import { spawn, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { lstatSync, mkdirSync, readFileSync, readlinkSync, renameSync, rmSync, symlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { runChild } from "./child.ts";
 import { DependencyError, ToolkitError } from "./errors.ts";
 import { cacheDir, essayTemplateDir, fontDir, journalTemplateDir, thesisTemplateDir, typstPackageDirs } from "./paths.ts";
 
@@ -111,9 +112,5 @@ export function runTypst(run: TypstRun): Promise<number> {
   for (const [key, value] of Object.entries(run.inputs)) {
     args.push("--input", `${key}=${value}`);
   }
-  return new Promise((resolvePromise, reject) => {
-    const child = spawn("typst", args, { stdio: "inherit" });
-    child.on("error", reject);
-    child.on("exit", (code, signal) => resolvePromise(code ?? (signal ? 1 : 0)));
-  });
+  return runChild("typst", args);
 }

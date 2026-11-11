@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { packageRoot } from "../src/paths.ts";
 import { fixture } from "./helpers.ts";
@@ -40,6 +40,11 @@ export function runCli(args: string[], cwd: string, env: NodeJS.ProcessEnv = san
     throw result.error;
   }
   return { code: result.status, stdout: result.stdout, stderr: result.stderr };
+}
+
+/** Start the CLI without waiting for it, for runs a test has to signal. */
+export function spawnCli(args: string[], cwd: string, env: NodeJS.ProcessEnv = sandboxEnv()): ChildProcess {
+  return spawn(process.execPath, [CLI, ...args], { cwd, env, stdio: "ignore" });
 }
 
 /** Evaluate Typst code with the real `typst` and return its JSON value. */

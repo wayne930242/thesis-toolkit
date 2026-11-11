@@ -1,7 +1,8 @@
-import { spawn, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { runChild } from "../child.ts";
 import { DependencyError, DownloadError, ToolkitError } from "../errors.ts";
 import { cacheDir } from "../paths.ts";
 
@@ -215,12 +216,5 @@ export async function mcp(args: string[]): Promise<number> {
 
   const env = { ...process.env };
   env.RSH_PAPER_SEARCH_PROJECT_DIR ??= paperSearch;
-  return new Promise((resolvePromise, reject) => {
-    const child = spawn(binary, [], { stdio: "inherit", env });
-    for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
-      process.on(signal, () => child.kill(signal));
-    }
-    child.on("error", reject);
-    child.on("exit", (code, signal) => resolvePromise(code ?? (signal ? 1 : 0)));
-  });
+  return runChild(binary, [], env);
 }
