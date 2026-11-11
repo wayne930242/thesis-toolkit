@@ -80,3 +80,27 @@ test("the title is not a numbered heading, so the first section is 1.", () => {
   );
   assert.deepEqual(numbers, ["1."]);
 });
+
+test("--template journal creates the Markdown journal skeleton with the title filled in", () => {
+  for (const flag of [["--template", "journal"], ["--template=journal"]]) {
+    const dir = consumer();
+    assert.equal(newProject(["paper", 'On "Virtue"', ...flag], dir), 0);
+    const project = join(dir, "projects/paper");
+    for (const file of ["body.md", "abstract.md", "abstract-en.md", "src/main/main.typ"]) {
+      assert.ok(existsSync(join(project, file)), `${flag.join(" ")}: ${file}`);
+    }
+    assert.ok(!existsSync(join(project, "chapters")), "journal has no chapters/");
+    assert.ok(!existsSync(join(project, "README.md")));
+    const main = readFileSync(join(project, "src/main/main.typ"), "utf8");
+    assert.ok(main.includes('title: "On \\"Virtue\\""'));
+    assert.ok(main.includes("@local/zh-journal:"));
+    assert.ok(!main.includes("{Article Title}"));
+  }
+});
+
+test("new-project refuses an unknown or missing --template", () => {
+  const dir = consumer();
+  assert.throws(() => newProject(["paper", "T", "--template", "poster"], dir), /unknown template: poster/);
+  assert.throws(() => newProject(["paper", "T", "--template"], dir), /--template needs a name/);
+  assert.ok(!existsSync(join(dir, "projects/paper")));
+});

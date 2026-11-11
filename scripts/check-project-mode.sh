@@ -60,6 +60,7 @@ check() {
 }
 has() { grep -qF -- "$2" <<<"$1"; }
 lacks() { ! grep -qF -- "$2" <<<"$1"; }
+quiet() { "$@" >/dev/null 2>&1; }
 
 check "subset keeps 4 of 5 entries (crossref parent included)" has "$log" "bibliography: 4/5 entries"
 check "no missing-key warning" lacks "$log" "warning"
@@ -73,4 +74,26 @@ check "generated bib names its source relatively" has "$gen" "from ../../lit/ref
 check "PDF cites Sosa" has "$text" "Sosa"
 check "PDF lists the crossref parent's book" has "$text" "Metaphysical Grounding"
 check "PDF resolves the @string publisher" has "$text" "Oxford University Press"
+
+# The Markdown journal skeleton: Pandoc citations in body.md reach the subset and the PDF, and a
+# line wrapped inside a Chinese sentence puts no space between the characters.
+tt new-project paper "論德性與知識" --template journal >/dev/null
+paper="$work/kb/..drafts/paper"
+check "fresh journal skeleton compiles" quiet tt compile paper main
+cat >>"$paper/body.md" <<'MD'
+
+# 引註
+
+多筆 [@fine2012; @sosa2007, 23]。只印年 [-@rosen2010]。如 @sosa2007 所說，
+德性即能力。
+MD
+log="$(tt compile paper main 2>&1)" || { echo "$log" >&2; echo "FAIL compile journal" >&2; exit 1; }
+text="$(pdftotext "$paper/src/main/main.pdf" -)"
+check "journal subset keeps the three cited entries and the crossref parent" has "$log" "bibliography: 4/5 entries"
+check "journal PDF has the title" has "$text" "論德性與知識"
+check "journal PDF groups two citations" has "$text" "(Fine 2012; Sosa 2007, 23)"
+check "journal PDF prints a year-only citation" has "$text" "(2010)"
+check "journal PDF prints a narrative citation" has "$text" "Sosa (2007) 所說"
+check "journal PDF joins the wrapped Chinese line" has "$text" "所說，德性即能力"
+check "journal PDF numbers the heading" has "$text" "肆、引註"
 exit "$fail"

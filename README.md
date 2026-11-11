@@ -32,6 +32,7 @@ npx thesis-toolkit compile thesis thesis       # projects/thesis/src/thesis/main
 npx thesis-toolkit compile thesis outline -w   # watch
 npx thesis-toolkit compile some/file.typ       # one file
 npx thesis-toolkit new-project grounding-essay "On Grounding and Essence"
+npx thesis-toolkit new-project my-paper "論文題目" --template journal  # Markdown body, zh-journal layout
 npx thesis-toolkit link                        # expose @local packages to editors
 npx thesis-toolkit mcp research-hub            # MCP server over stdio
 ```

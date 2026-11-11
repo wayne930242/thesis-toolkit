@@ -7,6 +7,8 @@ export const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 export const fontDir = join(packageRoot, "fonts");
 export const articleTemplateDir = join(packageRoot, "templates", "article");
+/** Project skeleton for a zh-journal article whose body and abstracts are Markdown. */
+export const journalSkeletonDir = join(packageRoot, "templates", "journal");
 export const thesisTemplateDir = join(packageRoot, "templates", "ntu-thesis");
 export const essayTemplateDir = join(packageRoot, "templates", "anonymous-essay");
 export const journalTemplateDir = join(packageRoot, "templates", "zh-journal");
