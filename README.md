@@ -31,6 +31,7 @@ Add `thesis-toolkit.json` beside `package.json`; paths are relative to it:
 npx thesis-toolkit compile thesis thesis       # projects/thesis/src/thesis/main.typ → main.pdf
 npx thesis-toolkit compile thesis outline -w   # watch
 npx thesis-toolkit compile some/file.typ       # one file
+npx thesis-toolkit compile thesis thesis --output /tmp/preview.pdf  # write the PDF elsewhere
 npx thesis-toolkit new-project grounding-essay "On Grounding and Essence"
 npx thesis-toolkit new-project my-paper "論文題目" --template journal  # Markdown body, zh-journal layout
 npx thesis-toolkit link                        # expose @local packages to editors
