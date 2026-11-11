@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { ToolkitError } from "./errors.ts";
+import { userMessage } from "./errors.ts";
 import { run } from "./run.ts";
 
 run(process.argv.slice(2), process.cwd()).then(
@@ -7,11 +7,11 @@ run(process.argv.slice(2), process.cwd()).then(
     process.exitCode = code;
   },
   (error: unknown) => {
-    if (error instanceof ToolkitError) {
-      console.error(`error: ${error.message}`);
-      process.exitCode = 1;
-      return;
+    const message = userMessage(error);
+    if (message === undefined) {
+      throw error;
     }
-    throw error;
+    console.error(`error: ${message}`);
+    process.exitCode = 1;
   },
 );

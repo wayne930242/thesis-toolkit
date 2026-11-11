@@ -1,14 +1,17 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { once } from "node:events";
+import { chmodSync, existsSync, readFileSync } from "node:fs";
+import { delimiter, join } from "node:path";
 import { test } from "node:test";
+import { setTimeout as sleep } from "node:timers/promises";
 import { compileUsage } from "../src/commands/compile.ts";
 import { linkUsage } from "../src/commands/link.ts";
 import { mcpUsage } from "../src/commands/mcp.ts";
 import { newProjectUsage } from "../src/commands/new-project.ts";
-import { ToolkitError } from "../src/errors.ts";
+import { ProjectError, ToolkitError, userMessage } from "../src/errors.ts";
 import { typstUserPackageDir } from "../src/paths.ts";
 import { run, usage } from "../src/run.ts";
+import { runCli, sandboxEnv, spawnCli } from "./cli-helpers.ts";
 import { fixture } from "./helpers.ts";
 
 async function capture(argv: string[], cwd = process.cwd()): Promise<{ code: number; text: string }> {
@@ -69,5 +72,70 @@ test("top-level help, version, no arguments, and unknown commands", async () => 
   for (const name of ["nope", "toString", "constructor"]) {
     await assert.rejects(capture([name]), ToolkitError);
     await assert.rejects(capture(["help", name]), ToolkitError);
+  }
+});
+
+test("an unwritable cache directory is reported as one error line, not a stack trace", () => {
+  const dir = fixture({ "a.typ": "hello" });
+  const result = runCli(["compile", "a.typ"], dir, sandboxEnv({ XDG_CACHE_HOME: "/dev/null/x" }));
+  assert.equal(result.code, 1);
+  // Which call hits the bad path first (lstat, mkdir) depends on the Node version.
+  assert.match(result.stderr, /^error: ENOTDIR: not a directory, \w+ '\/dev\/null\/x\/thesis-toolkit/);
+  assert.doesNotMatch(result.stderr, /^\s+at /m, "a stack trace was printed");
+});
+
+test("only failures the user can act on become an error line; a bug keeps its stack", () => {
+  assert.equal(userMessage(new ProjectError("file not found: x")), "file not found: x");
+  const denied = Object.assign(new Error("EACCES: permission denied, open '/x'"), { code: "EACCES", errno: -13, syscall: "open" });
+  assert.equal(userMessage(denied), "EACCES: permission denied, open '/x'");
+  // Node's own argument errors carry a code but no errno: they are bugs in this program.
+  const invalid = Object.assign(new TypeError("The \"path\" argument must be of type string"), { code: "ERR_INVALID_ARG_TYPE" });
+  for (const bug of [new TypeError("x is not a function"), invalid, "thrown string", undefined]) {
+    assert.equal(userMessage(bug), undefined);
+  }
+});
+
+/** Stands in for typst: answers --version, otherwise records its pid and stays up like `typst watch`. */
+const FAKE_TYPST = `#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo "typst 0.15.0"
+  exit 0
+fi
+echo $$ > "$FAKE_TYPST_PID_FILE"
+exec sleep 600
+`;
+
+function isRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+test("terminating compile --watch ends typst watch too, leaving no orphan", async () => {
+  const dir = fixture({ "a.typ": "hello", "bin/typst": FAKE_TYPST });
+  chmodSync(join(dir, "bin", "typst"), 0o755);
+  const pidFile = join(dir, "typst.pid");
+  const env = sandboxEnv({ PATH: `${join(dir, "bin")}${delimiter}${process.env.PATH}`, FAKE_TYPST_PID_FILE: pidFile });
+  const cli = spawnCli(["compile", "a.typ", "--watch"], dir, env);
+  let watcher: number | undefined;
+  try {
+    for (let waited = 0; watcher === undefined; waited += 20) {
+      assert.equal(cli.exitCode, null, "the CLI exited before typst watch started");
+      assert.ok(waited < 10_000, "typst watch did not start");
+      await sleep(20);
+      const recorded = existsSync(pidFile) ? readFileSync(pidFile, "utf8") : "";
+      watcher = /^\d+\n$/.test(recorded) ? Number(recorded) : undefined;
+    }
+    cli.kill("SIGTERM");
+    await once(cli, "exit");
+    assert.equal(isRunning(watcher), false, `typst watch (pid ${watcher}) outlived the CLI`);
+  } finally {
+    cli.kill("SIGKILL");
+    if (watcher !== undefined && isRunning(watcher)) {
+      process.kill(watcher, "SIGKILL");
+    }
   }
 });

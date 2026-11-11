@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { readFileSync, readlinkSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, readdirSync, readlinkSync, symlinkSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { packageRoot } from "../src/paths.ts";
-import { essayPackage, journalPackage, linkPackage, thesisPackage, toolkitPackages } from "../src/typst.ts";
+import { essayPackage, journalPackage, linkPackage, pruneStaleLinks, thesisPackage, toolkitPackages } from "../src/typst.ts";
 import { rootRelative } from "../src/commands/compile.ts";
 import { fixture } from "./helpers.ts";
 
@@ -43,6 +43,25 @@ test("linkPackage creates, keeps, and repoints its own symlink but never replace
   mkdirSync(join(root, "local", pkg.name, "9.9.9"), { recursive: true });
   writeFileSync(join(root, "local", pkg.name, "9.9.9", "user.typ"), "");
   assert.throws(() => linkPackage(root, other), /not a symlink/);
+});
+
+test("pruneStaleLinks removes only version links that point at the same package directory", () => {
+  const root = fixture({ "elsewhere/typst.toml": "" });
+  const pkg = thesisPackage();
+  const versions = join(root, "local", pkg.name);
+  linkPackage(root, { ...pkg, version: "0.0.1" });
+  linkPackage(root, { ...pkg, version: "0.0.2" });
+  const link = linkPackage(root, pkg);
+  mkdirSync(join(versions, "9.9.9"));
+  symlinkSync(join(root, "elsewhere"), join(versions, "8.8.8"), "dir");
+  // Not a version, e.g. another run's link on its way into place: not ours to remove.
+  symlinkSync(pkg.dir, join(versions, `${pkg.version}.123.tmp`), "dir");
+
+  assert.deepEqual(pruneStaleLinks(root, pkg), ["0.0.1", "0.0.2"]);
+  assert.deepEqual(readdirSync(versions).sort(), ["8.8.8", "9.9.9", pkg.version, `${pkg.version}.123.tmp`].sort());
+  assert.equal(readlinkSync(link), pkg.dir);
+  assert.deepEqual(pruneStaleLinks(root, pkg), []);
+  assert.deepEqual(pruneStaleLinks(join(root, "missing"), pkg), []);
 });
 
 test("rootRelative produces root-anchored paths and rejects paths outside the root", () => {

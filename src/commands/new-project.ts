@@ -10,9 +10,10 @@ export const newProjectUsage = `thesis-toolkit new-project <slug> "<Title>"
   <slug> is lowercase kebab-case. Compile it with: thesis-toolkit compile <slug> main`;
 
 const SLUG = /^[a-z0-9][a-z0-9-]*$/;
-const PLACEHOLDER = "{Article Title}";
+/** The skeleton's title, as the string literal it must stay: markup would interpret a title's `$`, `*`, `#`, `@`, `<`, `//`. */
+const TITLE_LITERAL = '"{Article Title}"';
 
-/** Escape for both a Typst string literal and markup: backslash and double quote. */
+/** Escape text for the inside of a Typst string literal: backslash and double quote. */
 export function escapeTypst(text: string): string {
   return text.replace(/[\\"]/g, (char) => `\\${char}`);
 }
@@ -37,7 +38,8 @@ export function newProject(args: string[], cwd: string): number {
   cpSync(articleTemplateDir, target, { recursive: true });
   rmSync(join(target, "README.md"), { force: true });
   const main = join(target, "src", "main", "main.typ");
-  writeFileSync(main, readFileSync(main, "utf8").replaceAll(PLACEHOLDER, escapeTypst(title)));
+  // A function replacer: in a replacement string, `$&` and `$1` in the title would expand.
+  writeFileSync(main, readFileSync(main, "utf8").replaceAll(TITLE_LITERAL, () => `"${escapeTypst(title)}"`));
 
   console.log(`created ${target}`);
   console.log(`compile with: thesis-toolkit compile ${slug} main`);
