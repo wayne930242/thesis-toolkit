@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { chmodSync, existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { createHash, randomBytes } from "node:crypto";
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DependencyError, DownloadError, ToolkitError } from "../errors.ts";
 import { cacheDir } from "../paths.ts";
@@ -39,12 +39,41 @@ function log(message: string): void {
   console.error(`thesis-toolkit: ${message}`);
 }
 
-async function download(url: string): Promise<Buffer> {
-  const response = await fetch(url);
+/** Fetches one pinned artifact; tests substitute a local source. */
+export type Download = (url: string) => Promise<Buffer>;
+
+/** A release asset and the SHA-256 it must have. */
+export interface BinaryPin {
+  target: string;
+  sha256: string;
+}
+
+/** Why a fetch failed: Node reports "fetch failed" and keeps the reason (ECONNREFUSED, ENOTFOUND...) in `cause`. */
+function failureReason(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return String(error);
+  }
+  const cause: unknown = error.cause;
+  const detail = cause instanceof Error ? cause.message || (cause as NodeJS.ErrnoException).code : undefined;
+  return detail ? `${error.message} (${detail})` : error.message;
+}
+
+/** GET one artifact. No network, a refused connection, a bad status, or a body cut short is a DownloadError. */
+export async function download(url: string): Promise<Buffer> {
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch (error) {
+    throw new DownloadError(`GET ${url} failed: ${failureReason(error)}`);
+  }
   if (!response.ok) {
     throw new DownloadError(`GET ${url} failed: ${response.status} ${response.statusText}`);
   }
-  return Buffer.from(await response.arrayBuffer());
+  try {
+    return Buffer.from(await response.arrayBuffer());
+  } catch (error) {
+    throw new DownloadError(`GET ${url} failed: ${failureReason(error)}`);
+  }
 }
 
 export function platformKey(platform: string = process.platform, arch: string = process.arch): string {
@@ -57,38 +86,106 @@ export function platformKey(platform: string = process.platform, arch: string = 
   return key;
 }
 
-async function ensureResearchHub(cache: string): Promise<string> {
-  const { target, sha256 } = RESEARCH_HUB.binaries[platformKey()] as { target: string; sha256: string };
+function currentPin(): BinaryPin {
+  return RESEARCH_HUB.binaries[platformKey()] as BinaryPin;
+}
+
+function sha256Of(data: Buffer): string {
+  return createHash("sha256").update(data).digest("hex");
+}
+
+/** A path beside `path` that no other run uses, to build an artifact before renaming it into place. */
+function tempBeside(path: string): string {
+  return `${path}.${process.pid}.${randomBytes(4).toString("hex")}.tmp`;
+}
+
+function readIfPresent(file: string): Buffer | undefined {
+  try {
+    return readFileSync(file);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+/**
+ * The research-hub binary in `cache`, downloaded when it is missing. A cached file counts only
+ * while it still has the pinned SHA-256, so a truncated or altered one is replaced, not run.
+ */
+export async function ensureResearchHub(
+  cache: string,
+  fetchArtifact: Download = download,
+  pin: BinaryPin = currentPin(),
+): Promise<string> {
+  const { target, sha256 } = pin;
   const binary = join(cache, `research-hub-${RESEARCH_HUB.version}-${target}`);
-  if (existsSync(binary)) {
-    return binary;
+  const cached = readIfPresent(binary);
+  if (cached) {
+    if (sha256Of(cached) === sha256) {
+      return binary;
+    }
+    log(`cached research-hub ${RESEARCH_HUB.version} does not match its checksum; replacing it`);
   }
   const url = `https://github.com/${RESEARCH_HUB.repo}/releases/download/v${RESEARCH_HUB.version}/rust-research-mcp-${target}`;
   log(`downloading research-hub ${RESEARCH_HUB.version} (${target})`);
-  const data = await download(url);
-  const actual = createHash("sha256").update(data).digest("hex");
+  const data = await fetchArtifact(url);
+  const actual = sha256Of(data);
   if (actual !== sha256) {
     throw new DownloadError(`checksum mismatch for ${url}: expected ${sha256 || "(unset)"}, got ${actual}`);
   }
-  const temp = `${binary}.${process.pid}.tmp`;
-  writeFileSync(temp, data);
-  chmodSync(temp, 0o755);
-  renameSync(temp, binary);
+  const temp = tempBeside(binary);
+  try {
+    writeFileSync(temp, data);
+    chmodSync(temp, 0o755);
+    // Replaces whatever is there in one step; a concurrent run renames the same bytes.
+    renameSync(temp, binary);
+  } finally {
+    rmSync(temp, { force: true });
+  }
   return binary;
 }
 
-async function ensurePaperSearch(cache: string): Promise<string> {
+/**
+ * Move an unpacked tree into place. A concurrent run may have installed the same pinned tree
+ * first, and its copy is as good as ours. A directory that is there but not `complete` is a
+ * leftover no run would have renamed into place, so it is replaced.
+ */
+function installTree(temp: string, dir: string, complete: () => boolean): void {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      renameSync(temp, dir);
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== "ENOTEMPTY" && code !== "EEXIST") {
+        throw error;
+      }
+    }
+    if (complete()) {
+      return;
+    }
+    rmSync(dir, { recursive: true, force: true });
+  }
+  throw new DownloadError(`cannot install ${dir}: it keeps reappearing incomplete; remove it and retry`);
+}
+
+/** The paper-search-mcp source tree in `cache`, downloaded and unpacked when it is missing or incomplete. */
+export async function ensurePaperSearch(cache: string, fetchArtifact: Download = download): Promise<string> {
   const dir = join(cache, `paper-search-mcp-${PAPER_SEARCH.rev}`);
-  if (existsSync(join(dir, "pyproject.toml"))) {
+  const complete = (): boolean => existsSync(join(dir, "pyproject.toml"));
+  if (complete()) {
     return dir;
   }
   const url = `https://codeload.github.com/${PAPER_SEARCH.repo}/tar.gz/${PAPER_SEARCH.rev}`;
   log(`downloading paper-search-mcp ${PAPER_SEARCH.rev.slice(0, 7)}`);
-  const archive = join(cache, `paper-search-mcp-${process.pid}.tar.gz`);
-  const temp = `${dir}.${process.pid}.tmp`;
-  writeFileSync(archive, await download(url));
+  const data = await fetchArtifact(url);
+  const temp = tempBeside(dir);
+  const archive = `${temp}.tar.gz`;
   try {
-    mkdirSync(temp, { recursive: true });
+    writeFileSync(archive, data);
+    mkdirSync(temp);
     const tar = spawnSync("tar", ["-xzf", archive, "-C", temp, "--strip-components=1"], { encoding: "utf8" });
     if (tar.status !== 0) {
       throw new DownloadError(`cannot extract ${url}: ${tar.stderr || tar.error?.message}`);
@@ -96,7 +193,7 @@ async function ensurePaperSearch(cache: string): Promise<string> {
     if (!existsSync(join(temp, "pyproject.toml"))) {
       throw new DownloadError(`${url} has no pyproject.toml`);
     }
-    renameSync(temp, dir);
+    installTree(temp, dir, complete);
   } finally {
     rmSync(archive, { force: true });
     rmSync(temp, { recursive: true, force: true });
