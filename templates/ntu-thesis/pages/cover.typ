@@ -48,7 +48,7 @@
     
     #v(0.5em)
     // 學位論文 (18pt, 粗體)
-    #text(size: 18pt, weight: "bold")[#degree-zh 學位#type-zh]
+    #text(size: 18pt, weight: "bold")[#(degree-zh + "學位" + type-zh)]
     
     #v(1em)
     // 英文學校資訊 (14pt)
@@ -102,6 +102,6 @@
     #v(1fr)
   ]
   
-  // 確保分頁
-  pagebreak()
+  // 確保分頁（weak：頁面已空時不再多出空白頁）
+  pagebreak(weak: true)
 } 

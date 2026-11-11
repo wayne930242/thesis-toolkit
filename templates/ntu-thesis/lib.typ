@@ -49,6 +49,14 @@
     message: "學位類型只能選擇一種！"
   )
   assert(institute != "", message: "必須設定研究所名稱！")
+  assert(
+    type(date) == str and date.match(regex("^\\d{4}-\\d{1,2}$|^\\d{4}-\\d{1,2}-\\d{1,2}$")) != none,
+    message: "必須設定論文日期 date，格式為 \"YYYY-MM-DD\"（例如 \"2024-06-20\"）！",
+  )
+  assert(
+    type(oral-date) == str and oral-date.match(regex("^\\d{4}-\\d{1,2}-\\d{1,2}$")) != none,
+    message: "必須設定口試日期 oral-date，格式為 \"YYYY-MM-DD\"（例如 \"2024-07-01\"）！",
+  )
   assert(title.zh != "" and title.en != "", message: "必須設定中英文論文題目！")
   assert(author.zh != "" and author.en != "", message: "必須設定中英文作者姓名！")
   assert(advisor.zh != "" and advisor.en != "", message: "必須設定中英文指導教授姓名！")
@@ -74,7 +82,7 @@
         institute-en: institute-en,
         degree-zh: if degree.master { "碩士" } else { "博士" },
         degree-en: if degree.master { "Master's" } else { "Doctor's" },
-        type-zh: if degree.master { "論文" } else { "學位論文" },
+        type-zh: "論文",
         type-en: if degree.master { "Thesis" } else { "Dissertation" },
         title: title,
         author: author,
@@ -90,7 +98,7 @@
         university: university,
         institute: institute,
         degree-zh: if degree.master { "碩士" } else { "博士" },
-        type-zh: if degree.master { "論文" } else { "學位論文" },
+        type-zh: "論文",
         title: title,
         author-zh: author.zh,
         student-id: student-id,
@@ -114,8 +122,8 @@
       make-outline()
     },
     
-    make-ref: (bibliography-content) => {
-      make-ref(bibliography-content)
+    make-ref: (bibliography-content, title: auto) => {
+      make-ref(bibliography-content, title: title)
     },
     
     // === 佈局元件 ===
@@ -124,7 +132,7 @@
     },
     
     mainmatter: (doc) => {
-      mainmatter(doc)
+      mainmatter(main-lang: main-lang, doc)
     },
     
     // === 工具函數 ===

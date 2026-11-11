@@ -42,41 +42,41 @@ bundled fonts and Typst packages, so documents need no font or template paths of
 
 ## The ntu-thesis template
 
-`templates/ntu-thesis` is the Typst package `@local/ntu-thesis:0.1.0` (see its README). Its version
+`templates/ntu-thesis` is the Typst package `@local/ntu-thesis:0.1.1` (see its README). Its version
 changes only when the template changes, so a toolkit upgrade does not touch your imports.
 
 ```typst
-#import "@local/ntu-thesis:0.1.0": setup, chapter-bib as ntu-chapter-bib
+#import "@local/ntu-thesis:0.1.1": setup, chapter-bib as ntu-chapter-bib
 ```
 
 Create the bibliography path in your project, not in the package, so it resolves against your root:
 
 ```typst
 // projects/thesis/src/thesis/bib.typ
-#import "@local/ntu-thesis:0.1.0": chapter-bib as ntu-chapter-bib
+#import "@local/ntu-thesis:0.1.1": chapter-bib as ntu-chapter-bib
 #let chapter-bib = ntu-chapter-bib.with(path(sys.inputs.at("bib-path", default: "/references.bib")))
 ```
 
 ## The anonymous-essay template
 
-`templates/anonymous-essay` is the Typst package `@local/anonymous-essay:0.1.0`, for blind review
+`templates/anonymous-essay` is the Typst package `@local/anonymous-essay:0.1.1`, for blind review
 (competitions, journal submissions). The page shows only the title, an optional word count, the
 abstract and the body, and the PDF metadata carries the title alone: no author, keywords or date.
 See `templates/anonymous-essay/example.typ`.
 
 ```typst
-#import "@local/anonymous-essay:0.1.0": essay, references
+#import "@local/anonymous-essay:0.1.1": essay, references
 #show: essay.with(title: [My Title], abstract: [...])
 ```
 
 ## The zh-journal template
 
-`templates/zh-journal` is the Typst package `@local/zh-journal:0.1.1`: a generic Taiwanese (TSSCI)
+`templates/zh-journal` is the Typst package `@local/zh-journal:0.1.2`: a generic Taiwanese (TSSCI)
 humanities journal article with Chinese and English titles and abstracts, 壹／一／（一） headings,
 footnotes, author-date citations, and an anonymous blind-review mode (see its README).
 
 ```typst
-#import "@local/zh-journal:0.1.1": article
+#import "@local/zh-journal:0.1.2": article
 #show: article.with(title: [論文題目], bib: path(sys.inputs.at("bib-path", default: "/references.bib")))
 ```
 
