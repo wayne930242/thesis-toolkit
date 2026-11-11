@@ -22,6 +22,8 @@ if [[ -n "$forbidden" ]]; then
     exit 1
 fi
 for required in dist/cli.js templates/ntu-thesis/typst.toml templates/ntu-thesis/lib.typ \
+    templates/anonymous-essay/typst.toml templates/anonymous-essay/lib.typ \
+    templates/zh-journal/typst.toml templates/zh-journal/lib.typ \
     templates/article/src/main/main.typ fonts/NotoSerifTC-Regular.otf fonts/OFL.txt LICENSE README.md; do
     grep -qx "$required" <<<"$paths" || { echo "missing from the tarball: $required" >&2; exit 1; }
 done

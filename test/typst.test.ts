@@ -3,7 +3,7 @@ import { readFileSync, readlinkSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { packageRoot } from "../src/paths.ts";
-import { essayPackage, linkPackage, thesisPackage, toolkitPackages } from "../src/typst.ts";
+import { essayPackage, journalPackage, linkPackage, thesisPackage, toolkitPackages } from "../src/typst.ts";
 import { rootRelative } from "../src/commands/compile.ts";
 import { fixture } from "./helpers.ts";
 
@@ -13,14 +13,21 @@ test("thesisPackage reads name and version from typst.toml", () => {
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
 });
 
-test("essayPackage reads the anonymous-essay manifest, and toolkitPackages lists both packages", () => {
+test("essayPackage reads the anonymous-essay manifest, and toolkitPackages lists every package", () => {
   const pkg = essayPackage();
   assert.equal(pkg.name, "anonymous-essay");
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
   assert.deepEqual(
     toolkitPackages().map((p) => p.name),
-    ["ntu-thesis", "anonymous-essay"],
+    ["ntu-thesis", "anonymous-essay", "zh-journal"],
   );
+});
+
+test("journalPackage reads the zh-journal manifest from its own directory", () => {
+  const pkg = journalPackage();
+  assert.equal(pkg.name, "zh-journal");
+  assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
+  assert.equal(pkg.dir, join(packageRoot, "templates", "zh-journal"));
 });
 
 test("linkPackage creates, keeps, and repoints its own symlink but never replaces a directory", () => {

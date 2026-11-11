@@ -1,0 +1,57 @@
+# zh-journal
+
+Typst 套件 `@local/zh-journal:0.1.0`：臺灣 TSSCI 人文期刊常見的投稿格式，不對應特定期刊。投稿前仍要對照目標期刊的〈撰稿體例〉調整。
+
+版面依序是中文題目與副題、作者（服務單位與 email 列為星號附註）、中文摘要與關鍵詞、正文、參考文獻，最後是英文題目與摘要。正文標題依「壹、／一、／（一）／1.／(1)」五層編號，腳註從 1 起連續編號，引註採作者—年代制（預設 `chicago-author-date`）。
+
+## 使用
+
+`thesis-toolkit compile` 會提供本套件；在編輯器預覽前先執行一次 `thesis-toolkit link`。
+
+```typst
+#import "@local/zh-journal:0.1.0": article
+
+#show: article.with(
+  title: [論文題目],
+  title-en: [English Title],
+  authors: ((name: "王小明", name-en: "Xiao-Ming Wang",
+             affiliation: "某大學哲學系博士生", affiliation-en: "…", email: "…"),),
+  abstract: [中文摘要……],
+  keywords: ("關鍵詞一", "關鍵詞二"),
+  abstract-en: [English abstract …],
+  keywords-en: ("keyword one", "keyword two"),
+  bib: path(sys.inputs.at("bib-path", default: "/references.bib")),
+)
+
+= 前言
+
+內文……@sosa2007[23]
+```
+
+`bib` 必須是在你自己專案裡建立的 `path(...)`，寫成字串會被解析到套件目錄裡。
+
+## 參數
+
+| 參數 | 預設 | 說明 |
+|---|---|---|
+| `title`、`subtitle` | 必填、`none` | 中文題目與副題 |
+| `title-en`、`subtitle-en` | `none` | 英文題目與副題 |
+| `authors` | `()` | 每位作者一個字典：`name` 必填，另可給 `name-en`、`affiliation`、`affiliation-en`、`email` |
+| `thanks` | `none` | 題目上的誌謝附註 |
+| `abstract`、`keywords` | `none`、`()` | 中文摘要與關鍵詞（以「、」連接） |
+| `abstract-en`、`keywords-en` | `none`、`()` | 英文摘要與關鍵詞 |
+| `english-position` | `"end"` | `"end"` 把英文題目與摘要放在參考文獻之後另起一頁，`"front"` 放在中文摘要之後 |
+| `anonymous` | `false` | 匿名審查稿：不印作者、誌謝，PDF metadata 也不含作者 |
+| `running-head` | 題目 | 第 2 頁起的頁眉 |
+| `bib`、`bib-style`、`bib-title` | `none`、`"chicago-author-date"`、`[參考文獻]` | 參考文獻來源、CSL 樣式與標題 |
+| `paper`、`font-size` | `"a4"`、`12pt` | 紙張與正文字級 |
+
+套件另外匯出 `zh-heading-numbering`（標題編號函式）與 `zh-upper`（1–99 的「壹、貳、參」大寫數字）。
+
+## 已知限制
+
+- 參考文獻只有一份清單，依 CSL 規則排序，不會自動分成「中文在前、西文在後」或依筆畫排序。
+- 中文條目沿用 CSL 的 zh-TW 語系，篇名用「」而非〈〉《》；期刊要求後者時需要換用自訂 CSL（`bib-style` 可給 CSL 檔的 `path(...)`）。
+- Typst 會把中文句子中間的換行排成一個空格，中文段落請寫成一行，不要在字與字之間斷行。
+
+`example.typ` 是完整示範：`thesis-toolkit compile templates/zh-journal/example.typ`。

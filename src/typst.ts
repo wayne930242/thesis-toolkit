@@ -2,7 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { lstatSync, mkdirSync, readFileSync, readlinkSync, renameSync, rmSync, symlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DependencyError, ToolkitError } from "./errors.ts";
-import { cacheDir, essayTemplateDir, fontDir, thesisTemplateDir } from "./paths.ts";
+import { cacheDir, essayTemplateDir, fontDir, journalTemplateDir, thesisTemplateDir, typstPackageDirs } from "./paths.ts";
 
 /** `path()` values, which the thesis template's bibliography helper relies on, need Typst 0.15. */
 const MIN_TYPST: readonly [number, number] = [0, 15];
@@ -35,9 +35,13 @@ export function essayPackage(): TypstPackage {
   return readPackage(essayTemplateDir);
 }
 
+export function journalPackage(): TypstPackage {
+  return readPackage(journalTemplateDir);
+}
+
 /** Every Typst package the toolkit ships, in the order `link` reports them. */
 export function toolkitPackages(): TypstPackage[] {
-  return [thesisPackage(), essayPackage()];
+  return typstPackageDirs.map(readPackage);
 }
 
 /** Point `<root>/<namespace>/<name>/<version>` at the package directory, replacing a stale link. */

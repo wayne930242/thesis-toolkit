@@ -9,8 +9,9 @@ own repository and call the CLI through `npx`. Read [README.md](README.md) for t
 
 - Documents compile through `thesis-toolkit compile`, never `typst compile` directly: it supplies the
   fonts, `--package-path`, the configured `--root`, and the bibliography subset.
-- `templates/ntu-thesis/typst.toml` versions the Typst package independently of `package.json`.
-  Bump it only for template changes, and tell consumers to update their `@local/ntu-thesis:<v>` imports.
+- Each `templates/<name>/typst.toml` (ntu-thesis, anonymous-essay, zh-journal) versions its Typst package independently
+  of `package.json`. Bump it only for that template's changes, and tell consumers to update their
+  `@local/<name>:<v>` imports. A new package also goes into `typstPackageDirs` in `src/paths.ts`.
 - A path string inside the package resolves against the package root. Anything that must resolve in
   the consumer's project is passed in as a `path(...)` created there.
 - Pins live in `src/commands/mcp.ts`: research-hub version plus per-platform SHA-256, and the
@@ -25,7 +26,7 @@ own repository and call the CLI through `npx`. Read [README.md](README.md) for t
 | Change | Check |
 |---|---|
 | `src/**`, `test/**` | `npm run typecheck && npm test` |
-| `templates/**`, `fonts/**` | `npm run build`, then `node dist/cli.js compile templates/ntu-thesis/example.typ` and each affected consumer target |
+| `templates/**`, `fonts/**` | `npm run build`, then `node dist/cli.js compile templates/<name>/example.typ` for each changed template and each affected consumer target |
 | `src/commands/mcp.ts` | `node dist/cli.js mcp research-hub` answers MCP `initialize` and `tools/list` |
 | `package.json` `files` | `npm pack --dry-run` lists no `lean/`, `docs/`, `scripts/`, or PDFs |
 | `lean/**`, `scripts/**` | `scripts/lean build`; `uv run scripts/lean_to_typst.py lean/latexExport.lean -o /tmp/out.typ` |

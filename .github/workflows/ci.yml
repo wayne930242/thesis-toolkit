@@ -23,6 +23,9 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - name: Compile the template example
-        run: node dist/cli.js compile templates/ntu-thesis/example.typ
+      - name: Compile the template examples
+        run: |
+          node dist/cli.js compile templates/ntu-thesis/example.typ
+          node dist/cli.js compile templates/anonymous-essay/example.typ
+          node dist/cli.js compile templates/zh-journal/example.typ
       - run: scripts/check-pack.sh

@@ -9,6 +9,10 @@ export const fontDir = join(packageRoot, "fonts");
 export const articleTemplateDir = join(packageRoot, "templates", "article");
 export const thesisTemplateDir = join(packageRoot, "templates", "ntu-thesis");
 export const essayTemplateDir = join(packageRoot, "templates", "anonymous-essay");
+export const journalTemplateDir = join(packageRoot, "templates", "zh-journal");
+
+/** Directories of the Typst packages the toolkit exposes under `@local`, in the order `link` reports them. */
+export const typstPackageDirs: readonly string[] = [thesisTemplateDir, essayTemplateDir, journalTemplateDir];
 
 /** Per-user cache for downloaded binaries, sources, and the generated Typst package tree. */
 export function cacheDir(env: NodeJS.ProcessEnv = process.env): string {

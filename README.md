@@ -69,6 +69,17 @@ See `templates/anonymous-essay/example.typ`.
 #show: essay.with(title: [My Title], abstract: [...])
 ```
 
+## The zh-journal template
+
+`templates/zh-journal` is the Typst package `@local/zh-journal:0.1.0`: a generic Taiwanese (TSSCI)
+humanities journal article with Chinese and English titles and abstracts, 壹／一／（一） headings,
+footnotes, author-date citations, and an anonymous blind-review mode (see its README).
+
+```typst
+#import "@local/zh-journal:0.1.0": article
+#show: article.with(title: [論文題目], bib: path(sys.inputs.at("bib-path", default: "/references.bib")))
+```
+
 ## research-hub MCP server
 
 `mcp research-hub` downloads the pinned

@@ -1,0 +1,8 @@
+[package]
+name = "zh-journal"
+version = "0.1.0"
+entrypoint = "lib.typ"
+authors = ["Wei-Hung"]
+license = "MIT"
+description = "Generic Taiwanese (TSSCI) humanities journal article in Traditional Chinese, author-date citations"
+exclude = ["example.typ", "example.bib", "*.pdf"]
