@@ -39,6 +39,14 @@
 #let _block-start = regex("^\s{0,3}([-*+>#|<]|\d+[.)]|```|~~~|$)")
 #let _fence = regex("^\s{0,3}(```|~~~)")
 
+/// Drop a YAML front matter block (`---` on the first line, up to the next `---` or `...`
+/// line), which editors such as MyGitNotes write and cmarker would print as text. Run it
+/// first: `md-cites(zh-join-lines(strip-frontmatter(read("body.md"))))`.
+#let strip-frontmatter(source) = {
+  let m = source.match(regex("^---[ \t]*\r?\n(?:[\s\S]*?\r?\n)??(?:---|\.\.\.)[ \t]*(?:\r?\n|$)"))
+  if m == none { source } else { source.slice(m.end) }
+}
+
 /// Join Markdown lines that continue one paragraph when either side of the break is CJK, so
 /// a wrapped Chinese sentence gets no stray space. Headings, lists, quotes, tables, code
 /// blocks, and hard breaks (two trailing spaces or `\`) keep their newlines, and so do breaks

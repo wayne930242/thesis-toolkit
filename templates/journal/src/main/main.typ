@@ -8,12 +8,12 @@
 //   文末參考文獻自動產生
 // - 腳註 [^1]，並在文中另起一行寫 [^1]: 腳註內容
 // - 圖片路徑相對於專案根目錄，例如 ![說明](figures/圖一.png)
-#import "@local/zh-journal:0.1.2": article, md-cites, zh-join-lines
+#import "@local/zh-journal:0.1.2": article, md-cites, strip-frontmatter, zh-join-lines
 #import "@preview/cmarker:0.1.10": render
 
 // 以專案根目錄為基準讀 Markdown 與其中的圖片。
 #let md(file) = render(
-  md-cites(zh-join-lines(read("../../" + file))),
+  md-cites(zh-join-lines(strip-frontmatter(read("../../" + file)))),
   scope: (
     image: (source, alt: none, format: auto) => image(
       if source.starts-with("/") { source } else { "../../" + source },

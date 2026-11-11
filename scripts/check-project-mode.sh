@@ -80,6 +80,8 @@ check "PDF resolves the @string publisher" has "$text" "Oxford University Press"
 tt new-project paper "論德性與知識" --template journal >/dev/null
 paper="$work/kb/..drafts/paper"
 check "fresh journal skeleton compiles" quiet tt compile paper main
+# An editor's front matter (MyGitNotes writes created/updated on save) must not be printed.
+{ printf -- '---\ncreated: 2026-11-11\nupdated: 前置資料\n---\n'; cat "$paper/body.md"; } >"$paper/body.tmp" && mv "$paper/body.tmp" "$paper/body.md"
 cat >>"$paper/body.md" <<'MD'
 
 # 引註
@@ -96,4 +98,5 @@ check "journal PDF prints a year-only citation" has "$text" "(2010)"
 check "journal PDF prints a narrative citation" has "$text" "Sosa (2007) 所說"
 check "journal PDF joins the wrapped Chinese line" has "$text" "所說，德性即能力"
 check "journal PDF numbers the heading" has "$text" "肆、引註"
+check "journal PDF omits the front matter" lacks "$text" "前置資料"
 exit "$fail"
