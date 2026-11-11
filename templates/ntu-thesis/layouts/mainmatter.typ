@@ -36,6 +36,9 @@
   )
 
   // 正文標題設定 - 遵循台大格式規範
+  // 台大格式的參考文獻標題；Typst 的 zh 預設是「書目」
+  set bibliography(title: if main-lang.zh [參考文獻] else [References])
+
   show heading.where(level: 1): it => {
     pagebreak(weak: true)
     v(1.5em)

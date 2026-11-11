@@ -49,14 +49,6 @@
     message: "學位類型只能選擇一種！"
   )
   assert(institute != "", message: "必須設定研究所名稱！")
-  assert(
-    type(date) == str and date.match(regex("^\\d{4}-\\d{1,2}$|^\\d{4}-\\d{1,2}-\\d{1,2}$")) != none,
-    message: "必須設定論文日期 date，格式為 \"YYYY-MM-DD\"（例如 \"2024-06-20\"）！",
-  )
-  assert(
-    type(oral-date) == str and oral-date.match(regex("^\\d{4}-\\d{1,2}-\\d{1,2}$")) != none,
-    message: "必須設定口試日期 oral-date，格式為 \"YYYY-MM-DD\"（例如 \"2024-07-01\"）！",
-  )
   assert(title.zh != "" and title.en != "", message: "必須設定中英文論文題目！")
   assert(author.zh != "" and author.en != "", message: "必須設定中英文作者姓名！")
   assert(advisor.zh != "" and advisor.en != "", message: "必須設定中英文指導教授姓名！")
@@ -72,7 +64,13 @@
   // 返回模組化函數
   return (
     // === 頁面元件 ===
+    // Dates are checked only where they are printed, so a document without a cover or
+    // verification page need not supply them.
     make-cover: () => {
+      assert(
+        type(date) == str and date.match(regex("^\\d{4}-\\d{1,2}$|^\\d{4}-\\d{1,2}-\\d{1,2}$")) != none,
+        message: "必須設定論文日期 date，格式為 \"YYYY-MM-DD\"（例如 \"2024-06-20\"）！",
+      )
       make-cover(
         university: university,
         university-en: university-en,
@@ -94,6 +92,10 @@
     },
     
     make-verification: () => {
+      assert(
+        type(oral-date) == str and oral-date.match(regex("^\\d{4}-\\d{1,2}-\\d{1,2}$")) != none,
+        message: "必須設定口試日期 oral-date，格式為 \"YYYY-MM-DD\"（例如 \"2024-07-01\"）！",
+      )
       make-verification(
         university: university,
         institute: institute,

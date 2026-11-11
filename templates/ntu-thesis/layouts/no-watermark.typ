@@ -98,6 +98,9 @@
   set figure(numbering: "1.1")
 
   // 目錄設定
+  // 台大格式的參考文獻標題；Typst 的 zh 預設是「書目」
+  set bibliography(title: if main-lang.zh [參考文獻] else [References])
+
   set outline(
     title: none,
     indent: auto
