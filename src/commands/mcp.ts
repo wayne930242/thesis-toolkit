@@ -16,16 +16,16 @@ export const mcpUsage = `thesis-toolkit mcp research-hub
 
 export const RESEARCH_HUB = {
   repo: "wayne930242/research_hub_mcp",
-  version: "0.6.8",
+  version: "0.6.9",
   /** SHA-256 of each release asset, keyed by `${process.platform}-${process.arch}`. */
   binaries: {
     "darwin-arm64": {
       target: "aarch64-apple-darwin",
-      sha256: "75584686d1dfeb799ceaa185b4cb82c3c962bb95660f12f495663dbf1348f0c8",
+      sha256: "202ea73c64b54f72fe9ac3f9053294acc7efcf67325681d6b21185a9c5376c6c",
     },
     "linux-x64": {
       target: "x86_64-unknown-linux-musl",
-      sha256: "f58f1b7ff68b1ea447d66e75dfc9e10213b6db1f8b802c10c710fb81c930997f",
+      sha256: "900c13a2022e4e86d5c055fecba2a929b6da8d3c2d5a5ce0ca4752fcb6fa7faa",
     },
   } as Record<string, { target: string; sha256: string }>,
 };

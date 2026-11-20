@@ -96,7 +96,7 @@ cache, then runs research-hub over stdio. `RSH_*` variables pass through:
   "mcpServers": {
     "research-hub": {
       "command": "npx",
-      "args": ["-y", "thesis-toolkit@0.1.6", "mcp", "research-hub"],
+      "args": ["-y", "thesis-toolkit@0.1.7", "mcp", "research-hub"],
       "env": { "RSH_LIBRARY_API_URL": "https://…", "RSH_DOWNLOAD_DIRECTORY": "/abs/path/downloads" }
     }
   }
@@ -106,8 +106,9 @@ cache, then runs research-hub over stdio. `RSH_*` variables pass through:
 `save_papers_to_library` also needs `RSH_LIBRARY_ADMIN_TOKEN`, the library's admin credential. Supply it
 from the launching environment rather than the committed `env` block.
 
-research-hub keeps a `.metadata_cache/` directory in the directory it is started from, so add that
-name to the `.gitignore` of the repository your MCP client runs in.
+research-hub keeps its metadata cache in the user cache directory
+(`~/Library/Caches/knowledge_accumulator_mcp/metadata` on macOS). Versions before 0.6.9 wrote a
+`.metadata_cache/` directory wherever they were started; delete any that are left.
 
 ## Repository-only tools
 

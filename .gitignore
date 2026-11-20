@@ -7,4 +7,3 @@ lean/.lake/
 lean4-server.log
 node_modules/
 dist/
-.metadata_cache/
